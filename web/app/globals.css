@@ -12,12 +12,15 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+/*
+  This is a deliberately light-themed app (dark sections like the hero and
+  footer use explicit Tailwind bg-neutral-900/text-white classes). Do NOT
+  reinstate a `prefers-color-scheme: dark` media query here — it previously
+  flipped --foreground to a near-white value whenever the OS/browser was in
+  dark mode, while most components only set an explicit background (not an
+  explicit text color), making body text and header text invisible. See
+  UX_AUDIT.md items 1-4.
+*/
 
 body {
   background: var(--background);
