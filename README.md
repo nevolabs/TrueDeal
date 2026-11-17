@@ -49,13 +49,12 @@ npx eslint .           # lint
 ```
 
 Run all three (`tsc`, `build`, `eslint`) before considering any change done —
-see `AGENTS.md` at the repo root for the full verification expectations.
+see `AGENTS.md` for the full verification expectations.
 
 ## What's where
 
-See `../AGENTS.md` (one level up, at the repo root) for the full map of the
-codebase — business logic, API routes, pages, and the mock data/reset model.
-Short version:
+See `AGENTS.md` for the full map of the codebase — business logic, API
+routes, pages, and the mock data/reset model. Short version:
 
 - `lib/data.ts`, `lib/seed.ts`, `lib/store.ts` — business rules, seed data,
   and the in-memory mock database + order state machine.

@@ -6,6 +6,44 @@ to replay `git log`.
 
 ---
 
+## 2026-11-18 — Flatten repo root to be the Next.js app directly
+
+**What was done**
+
+- Moved every file out of `web/` up to the repo root via `git mv` (preserving
+  history), so `package.json`, `app/`, `components/`, `lib/`, `public/` are
+  now at the top level — `npm install`/`npm run dev` work directly from the
+  repo root, no `cd web` needed. `sell.io/` (the original reference clone)
+  stays as a sibling folder.
+- Merged `web/.gitignore` into the root `.gitignore` (kept the fuller
+  Next.js-generated one) and merged `web/AGENTS.md`'s Next.js
+  auto-generated agent block into the root `AGENTS.md`, which was rewritten
+  to describe the flat layout.
+- Deleted the now-empty `web/` directory (including its `node_modules`/
+  `.next`, which were gitignored anyway) and reinstalled dependencies at the
+  repo root.
+- Verified: `npx tsc --noEmit`, `npm run build`, `npx eslint .` all clean
+  from the new root location.
+
+## 2026-11-18 — UX audit fixes, repo rename, proper README
+
+**What was done**
+
+- Ran a full UX/design audit fix pass (see `UX_AUDIT.md`): found and fixed
+  the root cause of most contrast complaints (a leftover
+  `prefers-color-scheme: dark` media query in `globals.css` that fought the
+  app's light-only theme), then fixed all 25 audit items plus an
+  accessibility/mobile pass — header/login/browse/item/home/footer/sell page
+  polish, URL-synced + dead-end-aware browse filters, a payout-calculator
+  edge case, emoji icons replaced with a small inline SVG set
+  (`components/icons.tsx`, no new dependency), `/protection` renamed to
+  `/how-it-works`, and site-wide `:focus-visible` + `prefers-reduced-motion`
+  CSS added.
+- GitHub repo renamed by the user from `PALAM---The-Bridge` to `TrueDeal`;
+  updated the git remote URL and every doc reference.
+- Replaced the create-next-app boilerplate `README.md` with real setup/run/
+  demo-account/verification instructions.
+
 ## 2026-11-17 — Initial clone + Next.js port
 
 **What was done**
