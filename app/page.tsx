@@ -42,7 +42,7 @@ export default function HomePage() {
               Used PC hardware, inspected by hand before it ships.
             </h1>
             <p className="mt-4 text-neutral-300">
-              Your payment waits in escrow while a sell.io technician checks the item against its listing. The
+              Your payment waits in escrow while a TrueDeal technician checks the item against its listing. The
               seller is paid only after you have had it for 48 hours.
             </p>
             <div className="mt-6 flex flex-wrap gap-3">

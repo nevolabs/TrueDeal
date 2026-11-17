@@ -17,8 +17,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "sell.io — verified hardware exchange",
-  description: "A mock prototype of a verified marketplace for pre-owned computer hardware.",
+  title: "TrueDeal — Verified Products. Protected Payments. Trusted Transactions.",
+  description: "A mock prototype of a secure buyer-seller transaction platform with independent product verification and escrow-based payment protection.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

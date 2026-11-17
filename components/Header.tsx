@@ -23,7 +23,7 @@ export default function Header() {
           href="/"
           className="rounded-md text-lg font-semibold tracking-tight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
         >
-          sell.io
+          TrueDeal
         </Link>
         <nav className="hidden items-center gap-6 text-sm text-neutral-600 md:flex">
           <Link href="/browse" className={NAV_LINK}>

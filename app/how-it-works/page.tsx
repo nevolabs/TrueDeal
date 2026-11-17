@@ -11,9 +11,9 @@ const STEPS = [
 export default function ProtectionPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
-      <h1 className="text-2xl font-semibold">How sell.io works</h1>
+      <h1 className="text-2xl font-semibold">How TrueDeal works</h1>
       <p className="mt-2 text-neutral-600">
-        Buying used hardware from a stranger usually means trusting their photos and paying first. On sell.io the
+        Buying used hardware from a stranger usually means trusting their photos and paying first. On TrueDeal, the
         money waits in escrow, and the item is inspected before it ships.
       </p>
 
@@ -127,7 +127,7 @@ export default function ProtectionPage() {
           {[
             [
               'Where is my money while I wait?',
-              "With a licensed payment partner, in an account that only pays out on our instruction: to the seller once the deal completes, or back to you if it does not. It never sits in sell.io's own bank account.",
+              "With a licensed payment partner, in an account that only pays out on our instruction: to the seller once the deal completes, or back to you if it does not. It never sits in TrueDeal's own bank account.",
             ],
             [
               'Can I talk to the seller directly?',

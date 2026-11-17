@@ -5,7 +5,7 @@ export default function Footer() {
     <footer className="mt-16 border-t border-neutral-200 bg-neutral-50">
       <div className="mx-auto max-w-6xl px-4 py-10 text-sm text-neutral-500">
         <div className="flex flex-wrap items-start justify-between gap-6">
-          <div className="max-w-sm">sell.io — a mock, non-production prototype. No real payments or KYC happen here.</div>
+          <div className="max-w-sm">TrueDeal — a mock, non-production prototype. No real payments or KYC happen here.</div>
           <div className="flex flex-wrap gap-x-8 gap-y-4">
             <div className="flex flex-col gap-1.5">
               <span className="text-xs font-semibold uppercase tracking-wide text-neutral-400">Site</span>

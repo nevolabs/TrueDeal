@@ -298,10 +298,10 @@ function ActionPanel({ data, reload }: { data: OrderData; reload: () => void }) 
     switch (o.status) {
       case 'paid':
         return (
-          <Box title={'A buyer has paid. Hand it over by ' + by + '.'} body={o.handover === 'onsite' ? 'Book a time for our agent to visit. They inspect it in front of you, seal it and take it away. Ask them for the code below before you hand anything over.' : 'Pack it well and send it to the sell.io hub in Bengaluru. Write this code on the outside of the parcel.'}>
+          <Box title={'A buyer has paid. Hand it over by ' + by + '.'} body={o.handover === 'onsite' ? 'Book a time for our agent to visit. They inspect it in front of you, seal it and take it away. Ask them for the code below before you hand anything over.' : 'Pack it well and send it to the TrueDeal hub in Bengaluru. Write this code on the outside of the parcel.'}>
             <div className="rounded-lg bg-neutral-50 p-3 text-sm"><span className="block text-xs text-neutral-500">Handover code</span><strong className="font-mono">{o.handoverCode}</strong></div>
             {o.handover !== 'onsite' ? (
-              <p className="text-xs text-neutral-500">sell.io Hub, 2nd Floor, 80 Feet Road, Indiranagar, Bengaluru 560038</p>
+              <p className="text-xs text-neutral-500">TrueDeal Hub, 2nd Floor, 80 Feet Road, Indiranagar, Bengaluru 560038</p>
             ) : (
               <p className="text-xs text-neutral-500">On-site visit: {inr(o.visitFee)}, deducted from your payout.</p>
             )}
@@ -407,7 +407,7 @@ export default function OrderPage({ params }: { params: Promise<{ id: string }> 
     role === 'seller' ? (
       <dl className="space-y-1 text-sm">
         <div className="flex justify-between"><dt>Sale price</dt><dd>{inr(o.price)}</dd></div>
-        <div className="flex justify-between"><dt>sell.io fee</dt><dd>− {inr(o.fee)}</dd></div>
+        <div className="flex justify-between"><dt>TrueDeal fee</dt><dd>− {inr(o.fee)}</dd></div>
         {!!o.visitFee && <div className="flex justify-between"><dt>On-site visit</dt><dd>− {inr(o.visitFee)}</dd></div>}
         <div className="flex justify-between border-t border-neutral-200 pt-1 font-medium"><dt>Your payout</dt><dd>{inr(o.payout)}</dd></div>
       </dl>

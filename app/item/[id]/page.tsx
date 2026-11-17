@@ -66,7 +66,7 @@ export default function ItemPage({ params }: { params: Promise<{ id: string }> }
         href={`/checkout/${listing.id}${wantsBench ? '?tier=full' : ''}`}
         className="block rounded-full bg-neutral-900 py-3.5 text-center text-base font-semibold text-white shadow-sm transition hover:bg-neutral-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
       >
-        Buy with sell.io protection
+        Buy with TrueDeal protection
       </Link>
     );
   } else if (listing.status === 'reserved') {
@@ -122,7 +122,7 @@ export default function ItemPage({ params }: { params: Promise<{ id: string }> }
             <section>
               <h2 className="mb-2 text-lg font-semibold">What we will check</h2>
               <p className="mb-3 text-sm text-neutral-500">
-                You choose the level at checkout. Either way, a sell.io technician handles the item before it ships
+                You choose the level at checkout. Either way, a TrueDeal technician handles the item before it ships
                 and you receive the signed report.
               </p>
               <div className="grid gap-6 sm:grid-cols-2">

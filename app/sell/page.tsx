@@ -26,7 +26,7 @@ export default function SellLanding() {
     <div className="mx-auto max-w-5xl px-4 py-10">
       <div className="grid gap-10 md:grid-cols-2 md:items-start">
         <div>
-          <h1 className="text-2xl font-semibold">Sell your hardware on sell.io</h1>
+          <h1 className="text-2xl font-semibold">Sell your hardware on TrueDeal</h1>
           <p className="mt-3 text-neutral-600">
             The buyer pays into escrow before you send anything, so you never chase a payment or meet a stranger to
             hand it over. You are paid 48 hours after the item is delivered.
@@ -65,7 +65,7 @@ export default function SellLanding() {
           </label>
           <dl className="mt-4 space-y-1 text-sm">
             <div className="flex justify-between">
-              <dt>sell.io fee ({FEES.commissionRate * 100}%, min {inr(FEES.commissionMin)})</dt>
+              <dt>TrueDeal fee ({FEES.commissionRate * 100}%, min {inr(FEES.commissionMin)})</dt>
               <dd>− {inr(feeAmt)}</dd>
             </div>
             {onSiteVisit && (
@@ -105,13 +105,13 @@ export default function SellLanding() {
 
       <section className="mt-12">
         <h2 className="text-lg font-semibold">What you&apos;d take home</h2>
-        <p className="mt-1 text-sm text-neutral-600">A few example sale prices, after the sell.io fee.</p>
+        <p className="mt-1 text-sm text-neutral-600">A few example sale prices, after the TrueDeal fee.</p>
         <div className="mt-4 overflow-x-auto rounded-xl border border-neutral-200">
           <table className="w-full text-sm">
             <thead className="bg-neutral-50 text-left text-xs text-neutral-500">
               <tr>
                 <th className="px-4 py-2">Sale price</th>
-                <th className="px-4 py-2">sell.io fee</th>
+                <th className="px-4 py-2">TrueDeal fee</th>
                 <th className="px-4 py-2">You receive</th>
               </tr>
             </thead>

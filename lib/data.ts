@@ -1,6 +1,6 @@
 import type { Category, Condition, Status, Step, Tier } from './types';
 
-export const BRAND = 'sell.io';
+export const BRAND = 'TrueDeal';
 export const HUB_CITY = 'Bengaluru';
 
 export const FEES = {
@@ -156,7 +156,7 @@ export const STATUS: Record<string, Status> = {
 
 export const STEPS: Step[] = [
   { key: 'paid', title: 'Payment held in escrow' },
-  { key: 'in_transit', title: 'Seller hands the item to sell.io', onsite: 'Inspection visit booked with the seller' },
+  { key: 'in_transit', title: 'Seller hands the item to TrueDeal', onsite: 'Inspection visit booked with the seller' },
   { key: 'at_hub', title: 'Received at the Bengaluru hub', onsite: 'Agent on site with the item' },
   { key: 'verified', title: 'Inspected; report issued', onsite: 'Inspected on site; report issued' },
   { key: 'shipped', title: 'Sealed and shipped, insured' },

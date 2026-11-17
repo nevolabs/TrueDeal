@@ -85,7 +85,7 @@ export function seed(checklistFor: (cat: string, tier?: 'basic' | 'full') => str
       condition: 'excellent', ageMonths: 58, warranty: 'Out of warranty', city: 'Bengaluru', mode: 'hub',
       serial: '0324819062255', createdAt: now - 6 * D,
       specs: [['Memory', '11 GB GDDR6'], ['Outputs', '3× DisplayPort 1.4, HDMI 2.0b, USB-C'], ['Power', '2× 8-pin, 650 W PSU recommended'], ['Length', '267 mm, dual slot']],
-      description: 'Bought on the NVIDIA store in Sept 2019. Gaming only, never mined on. Got it repasted with new thermal pads when I dropped it at the sell.io hub. Original box and bill.',
+      description: 'Bought on the NVIDIA store in Sept 2019. Gaming only, never mined on. Got it repasted with new thermal pads when I dropped it at the TrueDeal hub. Original box and bill.',
       report: seedReport('gpu', { id: 'VR-20417', at: now - 5 * D, grade: 'excellent', seal: 'S-7KQ2MD', serial: '0324819062255', notes: 'Peak 78°C after 30 minutes of 3DMark Time Spy stress, 99.4% frame stability. Fans spin true, no bearing noise. Light hairline marks on the backplate, visible only under direct light.' }, checklistFor),
     }),
     L({

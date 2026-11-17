@@ -186,7 +186,7 @@ function NewListingForm() {
             </div>
           </label>
           <dl className="mt-4 space-y-1 text-sm">
-            <div className="flex justify-between"><dt>sell.io fee</dt><dd>{priceNum ? '− ' + inr(feeAmt) : '–'}</dd></div>
+            <div className="flex justify-between"><dt>TrueDeal fee</dt><dd>{priceNum ? '− ' + inr(feeAmt) : '–'}</dd></div>
             <div className="flex justify-between"><dt>On-site visit</dt><dd>{visit ? '− ' + inr(visit) : 'None'}</dd></div>
             <div className="flex justify-between"><dt>Buyer pays shipping</dt><dd>{inr(shipFor(category))}</dd></div>
             <div className="flex justify-between border-t border-neutral-200 pt-1 font-medium"><dt>You receive</dt><dd>{priceNum ? inr(net) : '–'}</dd></div>
