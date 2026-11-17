@@ -1,0 +1,6 @@
+# Entry page used only for the Claude artifact preview
+artifact.html
+
+.DS_Store
+Thumbs.db
+.vercel
