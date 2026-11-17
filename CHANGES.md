@@ -39,7 +39,7 @@ to replay `git log`.
 - Initialized a new, separate git repo scoped to this `sellio/` directory
   (the enclosing filesystem tree has its own unrelated git repo one level up
   from here — left untouched) and pushed to the personal GitHub account:
-  `origin` → `github-personal:nevolabs/PALAM---The-Bridge.git`, branch
+  `origin` → `github-personal:nevolabs/TrueDeal.git`, branch
   `master`. Git identity for this repo: `yethu-KL29 <yethukichu55@gmail.com>`
   (local config only, not global).
 - Added `AGENTS.md` (repo root) and this file.

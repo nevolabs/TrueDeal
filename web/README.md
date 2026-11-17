@@ -1,36 +1,77 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# sell.io (Next.js port)
 
-## Getting Started
+A Next.js rebuild of [`sell.io`](https://github.com/iamdanusabu/sell.io), a
+clickable prototype of a verified marketplace for pre-owned computer hardware
+in India. Buyers pay into escrow, a bench agent inspects the item, and the
+seller is paid only after the buyer has had 48 hours with it.
 
-First, run the development server:
+This version replaces the original's client-only `localStorage` state with a
+real (mocked) REST API, backed by an in-memory store that's seeded with the
+same sample data on every server start.
 
-```bash
+> This is a **mock prototype**. No real payments, KYC checks, or courier
+> bookings happen — see `UX_AUDIT.md` and the root `AGENTS.md` / `CHANGES.md`
+> for full project history and design notes.
+
+## Requirements
+
+- Node.js 18.18 or later (Next.js 16 requirement)
+- npm (a `package-lock.json` is committed; other package managers aren't tested)
+
+## Run it locally
+
+```sh
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Sign in from `/login` as one of the three demo accounts (buyer, verified
+seller, or bench agent) — no password needed, they're one-click. Use
+**Reset** behavior via `POST /api/reset` if you want to wipe back to seed
+data (there's no UI button for it currently; call it directly, e.g.
+`curl -X POST http://localhost:3000/api/reset`).
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Demo account | Role |
+|---|---|
+| `arjun@example.com` | Buyer, has orders in progress |
+| `rhea@example.com` | Verified seller, has a sale to hand over |
+| `bench@sellio.example` | Bench agent — inspections, approvals, disputes |
 
-## Learn More
+## Other commands
 
-To learn more about Next.js, take a look at the following resources:
+```sh
+npm run build        # production build
+npm start             # run the production build (after npm run build)
+npx tsc --noEmit       # type-check only
+npx eslint .           # lint
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Run all three (`tsc`, `build`, `eslint`) before considering any change done —
+see `AGENTS.md` at the repo root for the full verification expectations.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## What's where
 
-## Deploy on Vercel
+See `../AGENTS.md` (one level up, at the repo root) for the full map of the
+codebase — business logic, API routes, pages, and the mock data/reset model.
+Short version:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- `lib/data.ts`, `lib/seed.ts`, `lib/store.ts` — business rules, seed data,
+  and the in-memory mock database + order state machine.
+- `app/api/**` — the mock REST API.
+- `app/**/page.tsx` — pages (all client components, fetching from `/api/*`).
+- `components/` — shared UI.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Notes on persistence
+
+State lives in `globalThis.__sellioState` for the lifetime of the Node
+process — it resets whenever the dev/production server restarts, or on
+`POST /api/reset`. There is no database; this is intentional for a mock.
+
+## Deploying
+
+No special configuration needed beyond a standard Next.js deployment
+(e.g. Vercel). Since all state is in-memory and per-process, a multi-instance
+or serverless deployment will **not** share state between requests/instances
+— fine for demoing the UI and flows, not suitable for anything persistent.

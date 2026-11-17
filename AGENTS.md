@@ -95,4 +95,4 @@ port (see CHANGES.md).
 
 ## Remote
 
-`origin` → `github-personal:nevolabs/PALAM---The-Bridge.git`, branch `master`.
+`origin` → `github-personal:nevolabs/TrueDeal.git`, branch `master`.
