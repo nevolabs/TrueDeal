@@ -6,6 +6,22 @@ to replay `git log`.
 
 ---
 
+## 2026-11-18 — README rewritten with the actual product positioning
+
+**What was done**
+
+- Replaced the README's product description (which only described the
+  `sell.io` used-hardware prototype) with the user-supplied product
+  description for the actual product being built: a general secure
+  buyer-seller transaction platform (verification + escrow + dispute
+  resolution), renamed in the README to **TrueDeal** with the tagline
+  "Verified Products. Protected Payments. Trusted Transactions."
+- Flagged honestly in the README that the current codebase still implements
+  the narrower `sell.io` scope (PC hardware, India, ₹ pricing, Bengaluru hub)
+  and hasn't yet been reworked to match the broader product description —
+  this is a known gap for a future session, not something silently glossed
+  over.
+
 ## 2026-11-18 — Flatten repo root to be the Next.js app directly
 
 **What was done**
