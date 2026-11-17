@@ -12,18 +12,19 @@ export async function GET(req: Request) {
   const sort = searchParams.get('sort') || 'new';
 
   const live = db.live();
+  const matchesOtherFilters = (l: (typeof live)[number]) =>
+    (!vault || l.mode === 'hub') &&
+    (!cond.length || cond.includes(l.condition)) &&
+    (!q || (l.title + ' ' + l.brand).toLowerCase().includes(q));
+
+  // Counts reflect every filter EXCEPT category, so the category list can grey
+  // out options that would return zero results given the other active filters.
   const counts: Record<string, number> = {};
-  live.forEach((l) => {
+  live.filter(matchesOtherFilters).forEach((l) => {
     counts[l.category] = (counts[l.category] || 0) + 1;
   });
 
-  let list = live.filter(
-    (l) =>
-      (!cat || l.category === cat) &&
-      (!vault || l.mode === 'hub') &&
-      (!cond.length || cond.includes(l.condition)) &&
-      (!q || (l.title + ' ' + l.brand).toLowerCase().includes(q))
-  );
+  let list = live.filter((l) => (!cat || l.category === cat) && matchesOtherFilters(l));
   const sorts: Record<string, (a: typeof list[number], b: typeof list[number]) => number> = {
     new: (a, b) => b.createdAt - a.createdAt,
     low: (a, b) => a.price - b.price,
@@ -31,8 +32,8 @@ export async function GET(req: Request) {
   };
   list = list.sort(sorts[sort] || sorts.new);
 
-  const categories = Object.keys(CATEGORIES).filter((k) => counts[k]);
-  return ok({ listings: list, counts, categories, total: live.length });
+  const categories = Object.keys(CATEGORIES);
+  return ok({ listings: list, counts, categories, total: live.filter(matchesOtherFilters).length });
 }
 
 export async function POST(req: Request) {

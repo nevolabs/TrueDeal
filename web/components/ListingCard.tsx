@@ -8,7 +8,7 @@ export default function ListingCard({ listing }: { listing: Listing }) {
   return (
     <Link
       href={`/item/${listing.id}`}
-      className="group flex flex-col overflow-hidden rounded-xl border border-neutral-200 bg-white transition hover:shadow-md"
+      className="group flex flex-col overflow-hidden rounded-xl border border-neutral-200 bg-white transition hover:border-neutral-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
     >
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-neutral-100">
         {listing.img ? (
@@ -31,9 +31,9 @@ export default function ListingCard({ listing }: { listing: Listing }) {
       <div className="flex flex-1 flex-col gap-1 p-3">
         <div className="line-clamp-2 text-sm font-medium text-neutral-900">{listing.title}</div>
         <div className="text-base font-semibold text-neutral-900">{inr(listing.price)}</div>
-        <div className="mt-auto flex items-center justify-between text-xs text-neutral-500">
-          <span>{cond?.label}</span>
-          <span>{listing.city}</span>
+        <div className="mt-auto flex items-center justify-between gap-2 text-xs">
+          <span className="rounded-full bg-neutral-100 px-2 py-0.5 font-medium text-neutral-600">{cond?.label}</span>
+          <span className="text-neutral-500">{listing.city}</span>
         </div>
       </div>
     </Link>

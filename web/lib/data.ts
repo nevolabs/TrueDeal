@@ -200,13 +200,13 @@ export function firstName(name: string): string {
 }
 
 export const PARTNERS = [
-  { name: 'Cashfree', role: 'Escrow & payouts', logo: 'cashfree.svg' },
-  { name: 'Razorpay', role: 'Payments', logo: 'razorpay.svg' },
-  { name: 'HyperVerge', role: 'Identity verification', logo: 'hyperverge.webp' },
-  { name: 'Blue Dart', role: 'Courier', logo: 'bluedart.svg' },
-  { name: 'Delhivery', role: 'Courier', logo: 'delhivery.png' },
-  { name: 'DHL', role: 'Courier', logo: 'dhl.svg' },
-  { name: 'Shiprocket', role: 'Shipping & insurance', logo: 'shiprocket.png' },
-  { name: 'Digit', role: 'Transit insurance', logo: 'digit.svg' },
-  { name: 'PhonePe', role: 'UPI payments', logo: 'phonepe.svg' },
+  { name: 'Cashfree', role: 'Escrow & payouts', logo: 'cashfree.svg', category: 'Payments' },
+  { name: 'Razorpay', role: 'Payments', logo: 'razorpay.svg', category: 'Payments' },
+  { name: 'PhonePe', role: 'UPI payments', logo: 'phonepe.svg', category: 'Payments' },
+  { name: 'HyperVerge', role: 'Identity verification', logo: 'hyperverge.webp', category: 'Identity' },
+  { name: 'Blue Dart', role: 'Courier', logo: 'bluedart.svg', category: 'Courier' },
+  { name: 'Delhivery', role: 'Courier', logo: 'delhivery.png', category: 'Courier' },
+  { name: 'DHL', role: 'Courier', logo: 'dhl.svg', category: 'Courier' },
+  { name: 'Shiprocket', role: 'Shipping & insurance', logo: 'shiprocket.png', category: 'Insurance' },
+  { name: 'Digit', role: 'Transit insurance', logo: 'digit.svg', category: 'Insurance' },
 ];

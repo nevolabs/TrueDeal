@@ -4,6 +4,7 @@ import { use, useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import ReportCard from '@/components/ReportCard';
+import { CheckIcon, LockIcon, ShieldIcon, TruckIcon } from '@/components/icons';
 import { CATEGORIES, CHECKS, CONDITIONS, FEES, age, benchFor, checklistFor, initials, shipFor, inr } from '@/lib/data';
 import { api, ApiError } from '@/lib/client';
 import { useSession } from '@/lib/session-context';
@@ -23,6 +24,7 @@ export default function ItemPage({ params }: { params: Promise<{ id: string }> }
   const [listing, setListing] = useState<Listing | null>(null);
   const [seller, setSeller] = useState<Seller | null>(null);
   const [error, setError] = useState('');
+  const [wantsBench, setWantsBench] = useState(false);
 
   useEffect(() => {
     api
@@ -60,7 +62,10 @@ export default function ItemPage({ params }: { params: Promise<{ id: string }> }
     buyBox = <div className="rounded-lg bg-neutral-50 p-3 text-sm text-neutral-600">Bench accounts cannot buy.</div>;
   } else if (listing.status === 'live') {
     buyBox = (
-      <Link href={`/checkout/${listing.id}`} className="block rounded-full bg-neutral-900 py-3 text-center text-sm font-medium text-white">
+      <Link
+        href={`/checkout/${listing.id}${wantsBench ? '?tier=full' : ''}`}
+        className="block rounded-full bg-neutral-900 py-3.5 text-center text-base font-semibold text-white shadow-sm transition hover:bg-neutral-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
+      >
         Buy with sell.io protection
       </Link>
     );
@@ -123,17 +128,23 @@ export default function ItemPage({ params }: { params: Promise<{ id: string }> }
               <div className="grid gap-6 sm:grid-cols-2">
                 <div>
                   <h3 className="mb-2 font-medium">Look-and-feel check, included</h3>
-                  <ul className="space-y-1 text-sm text-neutral-700">
+                  <ul className="space-y-1.5 text-sm text-neutral-700">
                     {checklistFor(listing.category, 'basic').map((c) => (
-                      <li key={c}>✓ {c}</li>
+                      <li key={c} className="flex items-start gap-2">
+                        <CheckIcon size={15} className="mt-0.5 shrink-0 text-emerald-600" />
+                        <span>{c}</span>
+                      </li>
                     ))}
                   </ul>
                 </div>
                 <div>
                   <h3 className="mb-2 font-medium">Full bench test, +{inr(benchFor(listing.category))}</h3>
-                  <ul className="space-y-1 text-sm text-neutral-700">
+                  <ul className="space-y-1.5 text-sm text-neutral-700">
                     {(CHECKS[listing.category] || CHECKS.component).map((c) => (
-                      <li key={c}>✓ {c}</li>
+                      <li key={c} className="flex items-start gap-2">
+                        <CheckIcon size={15} className="mt-0.5 shrink-0 text-emerald-600" />
+                        <span>{c}</span>
+                      </li>
                     ))}
                   </ul>
                 </div>
@@ -145,7 +156,9 @@ export default function ItemPage({ params }: { params: Promise<{ id: string }> }
         <aside className="flex flex-col gap-4">
           <div className="rounded-xl border border-neutral-200 p-5">
             <div className="mb-2 flex gap-2 text-xs">
-              <span className="rounded-full bg-emerald-100 px-2 py-1 text-emerald-800">✓ Verified seller</span>
+              <span className="flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-1 text-emerald-800">
+                <CheckIcon size={12} /> Verified seller
+              </span>
               <span className="rounded-full bg-neutral-100 px-2 py-1 text-neutral-700">{cond.label}</span>
             </div>
             <h1 className="text-xl font-semibold">{listing.title}</h1>
@@ -165,16 +178,33 @@ export default function ItemPage({ params }: { params: Promise<{ id: string }> }
                 <>
                   <div className="flex justify-between"><dt>Look-and-feel check</dt><dd>Included</dd></div>
                   <div className="flex justify-between"><dt>Full bench test</dt><dd>Optional, +{inr(benchFor(listing.category))}</dd></div>
-                  <div className="flex justify-between border-t border-neutral-200 pt-1 font-medium"><dt>You pay from</dt><dd>{inr(listing.price + ship)}</dd></div>
+                  <div className="flex justify-between border-t border-neutral-200 pt-2 text-base font-semibold text-neutral-900">
+                    <dt>You pay from</dt>
+                    <dd>{inr(listing.price + ship + (wantsBench ? benchFor(listing.category) : 0))}</dd>
+                  </div>
                 </>
               )}
             </dl>
+            {listing.status === 'live' && !mine && user?.role !== 'ops' && !(listing.mode === 'hub' && listing.report) && (
+              <label className="mb-3 flex items-start gap-2 rounded-lg border border-neutral-200 p-3 text-sm">
+                <input type="checkbox" className="mt-0.5" checked={wantsBench} onChange={(e) => setWantsBench(e.target.checked)} />
+                <span>
+                  Add the full bench test <span className="text-neutral-500">(+{inr(benchFor(listing.category))}, chosen at checkout)</span>
+                </span>
+              </label>
+            )}
             {buyBox}
             <p className="mt-3 text-xs text-neutral-500">{how}</p>
             <ul className="mt-4 space-y-1.5 text-xs text-neutral-600">
-              <li>🔒 Held in escrow until you have had {FEES.inspectionHours} hours with it</li>
-              <li>🛡 Full refund if it fails inspection</li>
-              <li>🚚 Tamper-sealed and insured in transit</li>
+              <li className="flex items-center gap-2">
+                <LockIcon size={14} className="shrink-0 text-neutral-400" /> Held in escrow until you have had {FEES.inspectionHours} hours with it
+              </li>
+              <li className="flex items-center gap-2">
+                <ShieldIcon size={14} className="shrink-0 text-neutral-400" /> Full refund if it fails inspection
+              </li>
+              <li className="flex items-center gap-2">
+                <TruckIcon size={14} className="shrink-0 text-neutral-400" /> Tamper-sealed and insured in transit
+              </li>
             </ul>
           </div>
 
@@ -184,7 +214,10 @@ export default function ItemPage({ params }: { params: Promise<{ id: string }> }
             </span>
             <div className="text-sm">
               <div className="font-medium">
-                {seller.name} <span className="ml-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-800">✓ ID verified</span>
+                {seller.name}{' '}
+                <span className="ml-1 inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-800">
+                  <CheckIcon size={11} /> ID verified
+                </span>
               </div>
               <div className="text-neutral-500">
                 {seller.city} · {seller.deals} completed {seller.deals === 1 ? 'deal' : 'deals'} · member since{' '}

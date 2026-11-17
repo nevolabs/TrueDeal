@@ -2,13 +2,16 @@
 
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
-import { FEES, fee, inr } from '@/lib/data';
+import { CATEGORIES, FEES, benchFor, fee, inr } from '@/lib/data';
 import { useSession } from '@/lib/session-context';
 
 export default function SellLanding() {
   const { user, loading } = useSession();
   const [price, setPrice] = useState(30000);
+  const [onSiteVisit, setOnSiteVisit] = useState(false);
   const feeAmt = useMemo(() => (price ? fee(price) : 0), [price]);
+  const visitFee = onSiteVisit ? FEES.visitFee : 0;
+  const belowMin = price > 0 && price < FEES.minPrice;
 
   const next = loading
     ? '#'
@@ -28,7 +31,10 @@ export default function SellLanding() {
             The buyer pays into escrow before you send anything, so you never chase a payment or meet a stranger to
             hand it over. You are paid 48 hours after the item is delivered.
           </p>
-          <Link href={next} className="mt-5 inline-block rounded-full bg-neutral-900 px-6 py-3 text-sm font-medium text-white">
+          <Link
+            href={next}
+            className="mt-5 inline-block rounded-full bg-neutral-900 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-neutral-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
+          >
             {cta} →
           </Link>
         </div>
@@ -48,19 +54,33 @@ export default function SellLanding() {
               />
             </div>
           </label>
+          {belowMin && (
+            <p className="mt-2 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-800">
+              Minimum price is {inr(FEES.minPrice)} — below that, the inspection would cost more than it protects.
+            </p>
+          )}
+          <label className="mt-3 flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={onSiteVisit} onChange={(e) => setOnSiteVisit(e.target.checked)} />
+            Our agent visits me instead of me shipping it (+{inr(FEES.visitFee)}, deducted from payout)
+          </label>
           <dl className="mt-4 space-y-1 text-sm">
             <div className="flex justify-between">
               <dt>sell.io fee ({FEES.commissionRate * 100}%, min {inr(FEES.commissionMin)})</dt>
               <dd>− {inr(feeAmt)}</dd>
             </div>
+            {onSiteVisit && (
+              <div className="flex justify-between">
+                <dt>On-site visit</dt>
+                <dd>− {inr(visitFee)}</dd>
+              </div>
+            )}
             <div className="flex justify-between border-t border-neutral-200 pt-1 font-medium">
               <dt>Paid to your bank</dt>
-              <dd>{inr(Math.max(0, price - feeAmt))}</dd>
+              <dd>{belowMin ? '—' : inr(Math.max(0, price - feeAmt - visitFee))}</dd>
             </div>
           </dl>
           <p className="mt-3 text-xs text-neutral-500">
-            The buyer pays shipping. You pay nothing unless the item sells. Would rather not post it? Our agent can
-            inspect and collect it from you for {inr(FEES.visitFee)}.
+            The buyer pays shipping. You pay nothing unless the item sells.
           </p>
         </div>
       </div>
@@ -82,6 +102,56 @@ export default function SellLanding() {
           </li>
         ))}
       </ol>
+
+      <section className="mt-12">
+        <h2 className="text-lg font-semibold">What you&apos;d take home</h2>
+        <p className="mt-1 text-sm text-neutral-600">A few example sale prices, after the sell.io fee.</p>
+        <div className="mt-4 overflow-x-auto rounded-xl border border-neutral-200">
+          <table className="w-full text-sm">
+            <thead className="bg-neutral-50 text-left text-xs text-neutral-500">
+              <tr>
+                <th className="px-4 py-2">Sale price</th>
+                <th className="px-4 py-2">sell.io fee</th>
+                <th className="px-4 py-2">You receive</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[6000, 15000, 30000, 80000, 150000].map((p) => (
+                <tr key={p} className="border-t border-neutral-100">
+                  <td className="px-4 py-2">{inr(p)}</td>
+                  <td className="px-4 py-2 text-neutral-500">− {inr(fee(p))}</td>
+                  <td className="px-4 py-2 font-medium">{inr(p - fee(p))}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="mt-12">
+        <h2 className="text-lg font-semibold">Questions sellers ask</h2>
+        <div className="mt-4 space-y-3">
+          {[
+            [
+              'What if my item fails inspection?',
+              'The buyer is refunded in full and the item is returned to you. If you chose an on-site visit, that fee is still due since the agent already made the trip.',
+            ],
+            [
+              'Can I sell something below the minimum price?',
+              `No — listings start at ${inr(FEES.minPrice)}. Below that, the cost of inspecting the item exceeds what it protects, so we can't accept the listing.`,
+            ],
+            [
+              `Why does the ${CATEGORIES.desktop.label.toLowerCase()} bench test cost more than a ${CATEGORIES.mouse.label.toLowerCase()}'s?`,
+              `Bench test pricing scales with how long the check takes: ${inr(benchFor('mouse'))} for a mouse up to ${inr(benchFor('desktop'))} for a full desktop build.`,
+            ],
+          ].map(([q, a]) => (
+            <details key={q} className="rounded-lg border border-neutral-200 p-4">
+              <summary className="cursor-pointer font-medium">{q}</summary>
+              <p className="mt-2 text-sm text-neutral-600">{a}</p>
+            </details>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }

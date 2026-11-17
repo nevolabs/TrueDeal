@@ -25,14 +25,17 @@ export default function DemoAccounts({ next }: { next?: string }) {
               await switchTo(a.id);
               router.push(next || a.next);
             }}
-            className="flex items-center gap-3 rounded-lg border border-neutral-200 bg-white p-3 text-left hover:border-neutral-400"
+            className="group flex items-center gap-3 rounded-lg border border-neutral-200 bg-white p-3 text-left hover:border-neutral-900 hover:bg-neutral-900/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
           >
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-neutral-900 text-xs font-medium text-white">
               {a.initials}
             </span>
-            <span>
+            <span className="flex-1">
               <strong className="block text-sm">{a.name}</strong>
               <em className="text-xs not-italic text-neutral-500">{a.note}</em>
+            </span>
+            <span className="shrink-0 whitespace-nowrap text-xs font-medium text-neutral-400 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
+              Use this account →
             </span>
           </button>
         ))}

@@ -2,8 +2,8 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { use, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, use, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import RequireAuth from '@/components/RequireAuth';
 import { CONDITIONS, TIERS, benchFor, firstName, inr, shipFor } from '@/lib/data';
 import { api, ApiError } from '@/lib/client';
@@ -13,6 +13,7 @@ import type { Listing, Order } from '@/lib/types';
 function CheckoutForm({ id }: { id: string }) {
   const { user } = useSession();
   const router = useRouter();
+  const search = useSearchParams();
   const [listing, setListing] = useState<Listing | null>(null);
   const [seller, setSeller] = useState<{ name: string } | null>(null);
   const [notFound, setNotFound] = useState(false);
@@ -22,7 +23,7 @@ function CheckoutForm({ id }: { id: string }) {
   const [line, setLine] = useState('');
   const [city, setCity] = useState('');
   const [pin, setPin] = useState('');
-  const [tier, setTier] = useState<'basic' | 'full'>('basic');
+  const [tier, setTier] = useState<'basic' | 'full'>(search.get('tier') === 'full' ? 'full' : 'basic');
   const [pay, setPay] = useState('UPI');
   const [error, setError] = useState('');
   const [paying, setPaying] = useState(false);
@@ -166,8 +167,10 @@ function CheckoutForm({ id }: { id: string }) {
 export default function CheckoutPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   return (
-    <RequireAuth>
-      <CheckoutForm id={id} />
-    </RequireAuth>
+    <Suspense>
+      <RequireAuth>
+        <CheckoutForm id={id} />
+      </RequireAuth>
+    </Suspense>
   );
 }

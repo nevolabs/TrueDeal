@@ -1,3 +1,4 @@
+import { CheckIcon, ChevronDownIcon } from '@/components/icons';
 import { CATEGORIES, CHECKS, FEES, benchFor, checklistFor, inr, shipFor } from '@/lib/data';
 
 const STEPS = [
@@ -52,7 +53,10 @@ export default function ProtectionPage() {
             <h3 className="mb-2 font-medium">Look-and-feel, every item</h3>
             <ul className="space-y-1 text-sm text-neutral-700">
               {checklistFor('', 'basic').map((c) => (
-                <li key={c}>✓ {c}</li>
+                <li key={c} className="flex items-start gap-2">
+                  <CheckIcon size={15} className="mt-0.5 shrink-0 text-emerald-600" />
+                  <span>{c}</span>
+                </li>
               ))}
             </ul>
           </div>
@@ -61,7 +65,10 @@ export default function ProtectionPage() {
               <h3 className="mb-2 font-medium">Bench test: {CATEGORIES[k].label.toLowerCase()}</h3>
               <ul className="space-y-1 text-sm text-neutral-700">
                 {CHECKS[k].map((c) => (
-                  <li key={c}>✓ {c}</li>
+                  <li key={c} className="flex items-start gap-2">
+                    <CheckIcon size={15} className="mt-0.5 shrink-0 text-emerald-600" />
+                    <span>{c}</span>
+                  </li>
                 ))}
               </ul>
             </div>
@@ -114,38 +121,35 @@ export default function ProtectionPage() {
         </table>
       </section>
 
-      <section className="mt-10">
+      <section id="faq" className="mt-10">
         <h2 className="text-lg font-semibold">Questions people ask</h2>
         <div className="mt-4 space-y-3">
-          <details className="rounded-lg border border-neutral-200 p-4">
-            <summary className="cursor-pointer font-medium">Where is my money while I wait?</summary>
-            <p className="mt-2 text-sm text-neutral-600">
-              With a licensed payment partner, in an account that only pays out on our instruction: to the seller
-              once the deal completes, or back to you if it does not. It never sits in sell.io&apos;s own bank
-              account.
-            </p>
-          </details>
-          <details className="rounded-lg border border-neutral-200 p-4">
-            <summary className="cursor-pointer font-medium">Can I talk to the seller directly?</summary>
-            <p className="mt-2 text-sm text-neutral-600">
-              No. Contact details stay private on both sides, and the inspection report is the record of what was
-              sold. If you have a question about an item, ask us and we will check it for you.
-            </p>
-          </details>
-          <details className="rounded-lg border border-neutral-200 p-4">
-            <summary className="cursor-pointer font-medium">What if the item dies a month later?</summary>
-            <p className="mt-2 text-sm text-neutral-600">
-              Our report describes the item on the day we tested it. After the inspection window closes, any
-              remaining manufacturer warranty is your cover, and we note its status in the report.
-            </p>
-          </details>
-          <details className="rounded-lg border border-neutral-200 p-4">
-            <summary className="cursor-pointer font-medium">Why is there a minimum price?</summary>
-            <p className="mt-2 text-sm text-neutral-600">
-              Every item takes a technician&apos;s time to inspect. Below {inr(FEES.minPrice)}, the inspection would
-              cost more than it protects.
-            </p>
-          </details>
+          {[
+            [
+              'Where is my money while I wait?',
+              "With a licensed payment partner, in an account that only pays out on our instruction: to the seller once the deal completes, or back to you if it does not. It never sits in sell.io's own bank account.",
+            ],
+            [
+              'Can I talk to the seller directly?',
+              'No. Contact details stay private on both sides, and the inspection report is the record of what was sold. If you have a question about an item, ask us and we will check it for you.',
+            ],
+            [
+              'What if the item dies a month later?',
+              'Our report describes the item on the day we tested it. After the inspection window closes, any remaining manufacturer warranty is your cover, and we note its status in the report.',
+            ],
+            [
+              'Why is there a minimum price?',
+              `Every item takes a technician's time to inspect. Below ${inr(FEES.minPrice)}, the inspection would cost more than it protects.`,
+            ],
+          ].map(([q, a]) => (
+            <details key={q} className="group rounded-lg border border-neutral-200 p-4">
+              <summary className="flex cursor-pointer list-none items-center justify-between font-medium [&::-webkit-details-marker]:hidden">
+                {q}
+                <ChevronDownIcon size={18} className="shrink-0 text-neutral-400 transition-transform group-open:rotate-180" />
+              </summary>
+              <p className="mt-2 text-sm text-neutral-600">{a}</p>
+            </details>
+          ))}
         </div>
       </section>
     </div>

@@ -1,31 +1,38 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useSession } from '@/lib/session-context';
 import { useToast } from '@/lib/toast-context';
+
+const NAV_LINK =
+  'rounded-md px-1 py-1 hover:text-neutral-900 active:text-neutral-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2';
 
 export default function Header() {
   const { user, loading, signOut } = useSession();
   const toast = useToast();
   const router = useRouter();
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-neutral-200 bg-white/90 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b border-neutral-200 bg-white">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
-        <Link href="/" className="text-lg font-semibold tracking-tight">
+        <Link
+          href="/"
+          className="rounded-md text-lg font-semibold tracking-tight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
+        >
           sell.io
         </Link>
         <nav className="hidden items-center gap-6 text-sm text-neutral-600 md:flex">
-          <Link href="/browse" className="hover:text-neutral-900">
+          <Link href="/browse" className={NAV_LINK}>
             Browse
           </Link>
-          <Link href="/protection" className="hover:text-neutral-900">
+          <Link href="/how-it-works" className={NAV_LINK}>
             How it works
           </Link>
-          <Link href="/sell" className="hover:text-neutral-900">
+          <Link href="/sell" className={NAV_LINK}>
             Sell
           </Link>
         </nav>
@@ -49,7 +56,7 @@ export default function Header() {
               <div className="relative">
                 <button
                   onClick={() => setOpen((v) => !v)}
-                  className="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-900 text-xs font-medium text-white"
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-900 text-xs font-medium text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
                   title={user.name}
                 >
                   {user.name
@@ -78,10 +85,10 @@ export default function Header() {
               </div>
             </>
           )}
-          {!loading && !user && (
+          {!loading && !user && pathname !== '/login' && (
             <Link
               href="/login"
-              className="rounded-full bg-neutral-900 px-4 py-1.5 text-sm font-medium text-white hover:bg-neutral-700"
+              className="rounded-full bg-neutral-900 px-4 py-1.5 text-sm font-medium text-white hover:bg-neutral-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
             >
               Sign in
             </Link>

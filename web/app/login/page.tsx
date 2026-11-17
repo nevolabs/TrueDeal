@@ -50,6 +50,11 @@ function LoginInner() {
       <div>
         <h1 className="text-2xl font-semibold">{join ? 'Create your account' : 'Sign in'}</h1>
         <p className="mt-1 text-sm text-neutral-500">{join ? 'One account lets you buy and sell.' : 'Welcome back.'}</p>
+        {next.startsWith('/checkout') && (
+          <p className="mt-3 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800">
+            Sign in to continue to checkout.
+          </p>
+        )}
         <form onSubmit={submit} className="mt-6 flex flex-col gap-4">
           {join && (
             <label className="text-sm">
@@ -59,7 +64,15 @@ function LoginInner() {
           )}
           <label className="text-sm">
             Email
-            <input type="email" className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2" value={email} onChange={(e) => setEmail(e.target.value)} />
+            <input
+              type="email"
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
+              className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
           </label>
           {join && (
             <label className="text-sm">
@@ -72,7 +85,10 @@ function LoginInner() {
             <input type="password" className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2" value={password} onChange={(e) => setPassword(e.target.value)} />
           </label>
           {error && <div className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
-          <button disabled={busy} className="rounded-full bg-neutral-900 py-2.5 text-sm font-medium text-white disabled:opacity-50">
+          <button
+            disabled={busy}
+            className="rounded-full bg-neutral-900 py-2.5 text-sm font-medium text-white hover:bg-neutral-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2 disabled:opacity-50"
+          >
             {join ? 'Create account' : 'Sign in'}
           </button>
         </form>

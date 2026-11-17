@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import ListingCard from '@/components/ListingCard';
 import ReportCard from '@/components/ReportCard';
+import { CheckIcon, ClockIcon, LockIcon, TruckIcon } from '@/components/icons';
 import { FEES, PARTNERS, benchFor, inr } from '@/lib/data';
 import { api } from '@/lib/client';
 import type { Listing } from '@/lib/types';
@@ -61,33 +62,51 @@ export default function HomePage() {
 
       <section className="mx-auto max-w-6xl px-4 py-8">
         <ul className="grid grid-cols-2 gap-3 text-sm text-neutral-600 md:grid-cols-4">
-          <li>🔒 Payment held in escrow</li>
-          <li>✓ Every item inspected by hand</li>
-          <li>🚚 Sealed and insured in transit</li>
-          <li>⏱ 48 hours to check it yourself</li>
+          <li className="flex items-center gap-2">
+            <LockIcon size={16} className="shrink-0 text-neutral-400" /> Payment held in escrow
+          </li>
+          <li className="flex items-center gap-2">
+            <CheckIcon size={16} className="shrink-0 text-neutral-400" /> Every item inspected by hand
+          </li>
+          <li className="flex items-center gap-2">
+            <TruckIcon size={16} className="shrink-0 text-neutral-400" /> Sealed and insured in transit
+          </li>
+          <li className="flex items-center gap-2">
+            <ClockIcon size={16} className="shrink-0 text-neutral-400" /> 48 hours to check it yourself
+          </li>
         </ul>
       </section>
 
       <section className="mx-auto max-w-6xl px-4 py-8">
         <h2 className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-400">In partnership with</h2>
         <p className="mb-4 text-sm text-neutral-500">
-          Your money, the parcel and the seller&apos;s identity are each handled by a specialist.
+          Your money, the parcel and the seller&apos;s identity are each handled by a specialist. This is a mock
+          prototype — these are not live integrations.
         </p>
-        <ul className="flex flex-wrap gap-x-8 gap-y-3 text-sm text-neutral-600">
-          {PARTNERS.map((p) => (
-            <li key={p.name} className="flex items-center gap-2">
-              <span className="font-medium">{p.name}</span>
-              <span className="text-neutral-400">· {p.role}</span>
-            </li>
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {(['Payments', 'Identity', 'Courier', 'Insurance'] as const).map((category) => (
+            <div key={category}>
+              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-400">{category}</h3>
+              <ul className="space-y-1 text-sm text-neutral-700">
+                {PARTNERS.filter((p) => p.category === category).map((p) => (
+                  <li key={p.name}>{p.name}</li>
+                ))}
+              </ul>
+            </div>
           ))}
-        </ul>
+        </div>
       </section>
 
       <section className="mx-auto max-w-6xl px-4 py-8">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-xl font-semibold">Recently listed</h2>
+        <div className="mb-4 flex items-end justify-between">
+          <div>
+            <h2 className="text-xl font-semibold">Recently listed</h2>
+            <p className="mt-0.5 text-sm text-neutral-500">
+              Showing {listings.length} of {total} live listings
+            </p>
+          </div>
           <Link href="/browse" className="text-sm underline">
-            All {total} listings
+            Browse all →
           </Link>
         </div>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
@@ -101,7 +120,7 @@ export default function HomePage() {
         <div className="mx-auto max-w-6xl px-4">
           <div className="mb-6 flex items-center justify-between">
             <h2 className="text-xl font-semibold">How a deal works</h2>
-            <Link href="/protection" className="text-sm underline">
+            <Link href="/how-it-works" className="text-sm underline">
               Fees and the full process
             </Link>
           </div>
@@ -133,7 +152,7 @@ export default function HomePage() {
               You see the report before the item ships. If the item does not match its listing, the order is
               cancelled and you get all your money back.
             </p>
-            <Link href="/protection#checks" className="mt-4 inline-block text-sm underline">
+            <Link href="/how-it-works#checks" className="mt-4 inline-block text-sm underline">
               What we check →
             </Link>
           </div>
