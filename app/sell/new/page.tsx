@@ -31,6 +31,7 @@ function NewListingForm() {
   const [newPrice, setNewPrice] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [photo,setPhoto]=useState<File|null>(null);
 
   const priceNum = Number(price) || 0;
   const feeAmt = priceNum ? fee(priceNum) : 0;
@@ -58,9 +59,17 @@ function NewListingForm() {
     }
     setBusy(true);
     try {
+      let img='';
+      if(photo) {
+        const form=new FormData();form.set('file',photo);
+        const response=await fetch('/api/uploads',{method:'POST',body:form});
+        const result=await response.json();
+        if(!response.ok) throw new ApiError(result.error || 'Photo upload failed.');
+        img=result.url;
+      }
       const d = await api.post<{ listing: Listing }>('/api/listings', {
         title, category, brand, condition, ageMonths, warranty, description,
-        invoice, box, serial, city, handover, price, newPrice,
+        invoice, box, serial, city, handover, price, newPrice,img,
       });
       toast('Submitted. We will review it within a working day.');
       router.push('/selling');
@@ -87,6 +96,9 @@ function NewListingForm() {
         <div className="flex flex-col gap-6">
           <section className="rounded-xl border border-neutral-200 p-5">
             <h2 className="mb-3 text-sm font-semibold">The item</h2>
+            <label className="mb-4 block text-sm">Product photo (JPEG, PNG or WebP, up to 5 MB)
+              <input type="file" accept="image/jpeg,image/png,image/webp" className="mt-1 block w-full text-sm" onChange={e=>setPhoto(e.target.files?.[0] || null)}/>
+            </label>
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="text-sm sm:col-span-2">
                 Title

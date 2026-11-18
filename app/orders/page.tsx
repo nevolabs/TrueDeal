@@ -26,7 +26,7 @@ function Row({ order, listing }: { order: Order; listing?: Listing }) {
       <div className="flex items-center gap-3">
         <div className="text-right text-sm">
           <div className="font-medium">{inr(order.total)}</div>
-          <div className="text-xs text-neutral-500">paid</div>
+          <div className="text-xs text-neutral-500">order total</div>
         </div>
         <StatusBadge status={order.status} />
       </div>

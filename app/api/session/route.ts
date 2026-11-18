@@ -1,23 +1,15 @@
-import { fail, guarded, ok } from '@/lib/api-helpers';
-import { getSessionUser, setSessionUser } from '@/lib/session';
-import { db } from '@/lib/store';
-
-export async function GET() {
-  const user = await getSessionUser();
-  return ok({ user });
-}
-
-export async function POST(req: Request) {
+import { guarded, ok } from '@/lib/api-helpers';
+import { getSessionUser } from '@/lib/session';
+import { createClient } from '@/utils/supabase/server';
+import { assertSameOrigin } from '@/lib/validation';
+import { AppError } from '@/lib/errors';
+export async function GET() { return guarded(async () => ok({ user: await getSessionUser() })); }
+export async function DELETE(request: Request) {
   return guarded(async () => {
-    const { userId } = await req.json();
-    const user = db.user(userId);
-    if (!user) return fail('No such user.', 404);
-    await setSessionUser(user.id);
-    return ok({ user });
+    assertSameOrigin(request);
+    const supabase = await createClient();
+    const { error } = await supabase.auth.signOut();
+    if (error) throw new AppError('Could not sign out. Please retry.', 503);
+    return ok({ user: null });
   });
-}
-
-export async function DELETE() {
-  await setSessionUser(null);
-  return ok({ user: null });
 }

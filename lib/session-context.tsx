@@ -9,9 +9,8 @@ interface SessionCtx {
   user: User | null;
   loading: boolean;
   refresh: () => Promise<void>;
-  switchTo: (userId: string) => Promise<User>;
   signOut: () => Promise<void>;
-  resetData: () => Promise<void>;
+  error: string;
 }
 
 const Ctx = createContext<SessionCtx | null>(null);
@@ -19,27 +18,19 @@ const Ctx = createContext<SessionCtx | null>(null);
 export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const router = useRouter();
 
   const refresh = useCallback(async () => {
     const data = await api.get<{ user: User | null }>('/api/session');
     setUser(data.user);
+    setError('');
   }, []);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- initial session fetch on mount
-    refresh().finally(() => setLoading(false));
+    refresh().catch((e: Error) => setError(e.message)).finally(() => setLoading(false));
   }, [refresh]);
-
-  const switchTo = useCallback(
-    async (userId: string) => {
-      const data = await api.post<{ user: User }>('/api/session', { userId });
-      setUser(data.user);
-      router.refresh();
-      return data.user;
-    },
-    [router]
-  );
 
   const signOut = useCallback(async () => {
     await api.del('/api/session');
@@ -47,15 +38,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     router.refresh();
   }, [router]);
 
-  const resetData = useCallback(async () => {
-    await api.post('/api/reset');
-    setUser(null);
-    router.refresh();
-  }, [router]);
-
   const value = useMemo(
-    () => ({ user, loading, refresh, switchTo, signOut, resetData }),
-    [user, loading, refresh, switchTo, signOut, resetData]
+    () => ({ user, loading, refresh, signOut, error }),
+    [user, loading, refresh, signOut, error]
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

@@ -142,6 +142,10 @@ export const DISPUTE_REASONS = [
 ];
 
 export const STATUS: Record<string, Status> = {
+  awaiting_payment: { label: 'Awaiting payment', tone: 'amber' },
+  payment_review: { label: 'Payment under review', tone: 'amber' },
+  refund_pending: { label: 'Refund processing', tone: 'amber' },
+  release_pending: { label: 'Seller settlement pending', tone: 'amber' },
   paid: { label: 'Payment held', tone: 'amber' },
   in_transit: { label: 'Handover', tone: 'amber' },
   at_hub: { label: 'Being inspected', tone: 'amber' },

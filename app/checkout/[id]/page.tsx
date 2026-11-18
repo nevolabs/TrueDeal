@@ -9,6 +9,7 @@ import { CONDITIONS, TIERS, benchFor, firstName, inr, shipFor } from '@/lib/data
 import { api, ApiError } from '@/lib/client';
 import { useSession } from '@/lib/session-context';
 import type { Listing, Order } from '@/lib/types';
+import { openCheckout } from '@/lib/payments/checkout-client';
 
 function CheckoutForm({ id }: { id: string }) {
   const { user } = useSession();
@@ -27,6 +28,10 @@ function CheckoutForm({ id }: { id: string }) {
   const [pay, setPay] = useState('UPI');
   const [error, setError] = useState('');
   const [paying, setPaying] = useState(false);
+  const [paymentConfig,setPaymentConfig]=useState<{enabled:boolean;testMode:boolean}|null>(null);
+  const [reservedOrder,setReservedOrder]=useState<string|null>(null);
+
+  useEffect(()=>{api.get<{enabled:boolean;testMode:boolean}>('/api/payments/config').then(setPaymentConfig).catch(()=>setPaymentConfig({enabled:false,testMode:true}));},[]);
 
   useEffect(() => {
     api
@@ -65,15 +70,21 @@ function CheckoutForm({ id }: { id: string }) {
       return;
     }
     setPaying(true);
-    await new Promise((r) => setTimeout(r, 900));
     try {
-      const d = await api.post<{ order: Order }>('/api/orders', {
+      let orderId=reservedOrder;
+      if(!orderId) {
+       const d = await api.post<{ order: Order }>('/api/orders', {
         listingId: id,
         address: { name, phone, line, city, pin },
         payMethod: pay,
         tier,
       });
-      router.push(`/order/${d.order.id}`);
+       orderId=d.order.id;setReservedOrder(orderId);
+      }
+      const details=await api.post<Parameters<typeof openCheckout>[0]>(`/api/orders/${orderId}/checkout`);
+      const result=await openCheckout(details);
+      await api.post('/api/payments/verify',{orderId,...result});
+      router.push(`/order/${orderId}`);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'Something went wrong.');
       setPaying(false);
@@ -122,7 +133,7 @@ function CheckoutForm({ id }: { id: string }) {
           </section>
 
           <section className="rounded-xl border border-neutral-200 p-5">
-            <h2 className="mb-3 text-sm font-semibold">Pay into escrow</h2>
+            <h2 className="mb-3 text-sm font-semibold">Secure payment</h2>
             <div className="flex flex-col gap-2">
               {['UPI', 'Net banking', 'Card'].map((p) => (
                 <label key={p} className="flex items-center gap-2 rounded-lg border border-neutral-200 p-3 text-sm">
@@ -154,10 +165,11 @@ function CheckoutForm({ id }: { id: string }) {
             <div className="flex justify-between border-t border-neutral-200 pt-1 font-medium"><dt>Total</dt><dd>{inr(total)}</dd></div>
           </dl>
           {error && <div className="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
-          <button disabled={paying} className="mt-4 w-full rounded-full bg-neutral-900 py-2.5 text-sm font-medium text-white disabled:opacity-50">
-            {paying ? 'Contacting your bank…' : `Pay ${inr(total)} into escrow`}
+          <button disabled={paying || !paymentConfig?.enabled} className="mt-4 w-full rounded-full bg-neutral-900 py-2.5 text-sm font-medium text-white disabled:opacity-50">
+            {paying ? 'Opening secure checkout…' : !paymentConfig?.enabled ? 'Payments not available yet' : `Pay ${inr(total)}`}
           </button>
-          <p className="mt-2 text-center text-xs text-neutral-500">Mock prototype: no real payment is taken.</p>
+          <p className="mt-2 text-center text-xs text-neutral-500">{!paymentConfig?.enabled?'Checkout opens once our payment service is activated.':paymentConfig.testMode?'Test mode: no real money is collected.':'Payment processed securely by Razorpay.'}</p>
+          {reservedOrder && <Link className="mt-3 block text-center text-sm underline" href={`/order/${reservedOrder}`}>View payment status</Link>}
         </aside>
       </form>
     </div>

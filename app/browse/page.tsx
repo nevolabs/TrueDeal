@@ -36,6 +36,7 @@ function BrowseInner() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [loadedOnce, setLoadedOnce] = useState(false);
+  const [error,setError]=useState('');
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -55,11 +56,13 @@ function BrowseInner() {
         '/api/listings?' + qs
       )
       .then((d) => {
+        setError('');
         setListings(d.listings);
         setCounts(d.counts);
         setCategories(d.categories);
         setTotal(d.total);
       })
+      .catch(e=>setError(e instanceof Error?e.message:'Listings are unavailable.'))
       .finally(() => {
         setLoadedOnce(true);
         setLoading(false);
@@ -169,7 +172,7 @@ function BrowseInner() {
               </select>
             </label>
           </div>
-          {loading && !loadedOnce ? (
+          {error ? <p role="alert" className="rounded-md bg-red-50 p-4 text-sm text-red-700">{error}</p> : loading && !loadedOnce ? (
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
               {Array.from({ length: 6 }).map((_, i) => (
                 <SkeletonCard key={i} />

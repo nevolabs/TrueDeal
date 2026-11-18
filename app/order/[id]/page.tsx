@@ -2,9 +2,11 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { use, useEffect, useState } from 'react';
+import { use, useCallback, useEffect, useState } from 'react';
 import ReportCard from '@/components/ReportCard';
 import StatusBadge from '@/components/StatusBadge';
+import ResumePayment from '@/components/ResumePayment';
+import EvidencePanel from '@/components/EvidencePanel';
 import { CONDITIONS, COURIERS, DISPUTE_REASONS, FEES, STEPS, TIERS, checklistFor, firstName, inr } from '@/lib/data';
 import { api, ApiError } from '@/lib/client';
 import { useSession } from '@/lib/session-context';
@@ -107,7 +109,7 @@ function InspectForm({ data, onDone }: { data: OrderData; onDone: () => void }) 
     setBusy(true);
     try {
       await api.post(`/api/orders/${data.order.id}/verify`, body);
-      toast(outcome === 'pass' ? 'Report issued. Ready to pack.' : 'Item failed. Buyer refunded.');
+      toast(outcome === 'pass' ? 'Report issued. Ready to pack.' : 'Item failed. Refund queued.');
       onDone();
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'Something went wrong.');
@@ -194,9 +196,10 @@ function DisputeForm({ id, onDone }: { id: string; onDone: () => void }) {
       setError('Please describe what happened.');
       return;
     }
-    await api.post(`/api/orders/${id}/dispute`, { reason, detail });
-    toast('Claim opened. The payout is frozen.');
-    onDone();
+    try {
+      await api.post(`/api/orders/${id}/dispute`, { reason, detail });
+      toast('Claim opened. The payout is frozen.');onDone();
+    } catch(e) {setError(e instanceof Error?e.message:'Could not open the claim.');}
   }
 
   return (
@@ -220,10 +223,12 @@ function DisputeForm({ id, onDone }: { id: string; onDone: () => void }) {
 
 function DispatchForm({ id, onDone }: { id: string; onDone: () => void }) {
   const [courier, setCourier] = useState(COURIERS[0]);
+  const [awb,setAwb]=useState('');
+  const [error,setError]=useState('');
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    await api.post(`/api/orders/${id}/dispatch`, { courier });
-    onDone();
+    try {await api.post(`/api/orders/${id}/dispatch`, { courier,awb });onDone();}
+    catch(e){setError(e instanceof Error?e.message:'Dispatch failed.');}
   }
   return (
     <form onSubmit={submit} className="flex flex-col gap-2">
@@ -232,6 +237,8 @@ function DispatchForm({ id, onDone }: { id: string; onDone: () => void }) {
           {COURIERS.map((c) => <option key={c}>{c}</option>)}
         </select>
       </label>
+      <label className="text-sm">Tracking number<input required minLength={3} className="mt-1 w-full rounded-md border px-3 py-2" value={awb} onChange={e=>setAwb(e.target.value)}/></label>
+      {error&&<p role="alert" className="text-sm text-red-700">{error}</p>}
       <button className="rounded-full bg-neutral-900 py-2 text-sm font-medium text-white">Mark dispatched</button>
     </form>
   );
@@ -251,17 +258,21 @@ function ActionPanel({ data, reload }: { data: OrderData; reload: () => void }) 
   const F = FEES;
 
   async function run(action: string, msg?: string) {
-    await api.post(`/api/orders/${o.id}/${action}`);
-    if (msg) toast(msg);
-    reload();
+    try {await api.post(`/api/orders/${o.id}/${action}`);if (msg) toast(msg);reload();}
+    catch(e){toast(e instanceof Error?e.message:'Action failed.');}
   }
+
+  if(o.status==='awaiting_payment') return <Box title="Payment has not been confirmed." body="Complete checkout to fund the transaction. Expired or uncertain checkouts may require support review.">{role==='buyer'&&<ResumePayment orderId={o.id} onDone={reload}/>}</Box>;
+  if(o.status==='payment_review') return <Box title="Payment needs review." body="We have not confirmed a protected seller allocation. Do not hand over or ship the item yet."/>;
+  if(o.status==='refund_pending') return <Box title="Refund processing." body="The refund is queued. We will show Refunded once processing and transfer reversal are confirmed."/>;
+  if(o.status==='release_pending') return <Box title="Seller settlement pending." body="Release has been authorized. Bank settlement will be confirmed separately."/>;
 
   if (role === 'buyer') {
     const by = new Date(o.createdAt + F.handoverDays * 24 * 36e5).toLocaleDateString('en-IN');
     const s = firstName(seller.name);
     switch (o.status) {
       case 'paid':
-        return <Box title="Your payment is safe in escrow." body={`${s} has until ${by} to hand the item to us. If that does not happen, you are refunded automatically.`}><ActionButton label="Cancel and refund" onClick={() => run('cancel', 'Order cancelled. Refund issued.')} /></Box>;
+        return <Box title="Payment captured; seller settlement held." body={`${s} has until ${by} to hand the item to us. Contact support if the handover is delayed.`}><ActionButton label="Cancel and request refund" onClick={() => run('cancel', 'Refund queued.')} /></Box>;
       case 'in_transit':
         return <Box title={o.handover === 'onsite' ? 'Inspection visit booked.' : 'On its way to our bench.'} body={o.handover === 'onsite' ? `Our agent is visiting ${s} to inspect the item in person.` : `${s} has handed the item over. We will inspect it as soon as it reaches the hub.`} />;
       case 'at_hub':
@@ -288,7 +299,7 @@ function ActionPanel({ data, reload }: { data: OrderData; reload: () => void }) 
       case 'refunded':
         return <Box title="Refunded." body={`${inr(o.total)} has been returned to your original payment method (${o.payMethod}).`} />;
       case 'cancelled':
-        return <Box title="Order cancelled." body={`${inr(o.total)} has been returned to your original payment method.`} />;
+        return <Box title="Reservation cancelled." body="This unpaid reservation has closed. No payment or refund is confirmed for it." />;
     }
   }
 
@@ -362,7 +373,8 @@ function ActionPanel({ data, reload }: { data: OrderData; reload: () => void }) 
       case 'disputed':
         return (
           <Box title="Claim to resolve." body="Compare the buyer's evidence with the report, intake video and packing video.">
-            <ActionButton label="Uphold claim, refund buyer" onClick={() => run('refund', 'Buyer refunded.')} />
+            <ActionButton label="Confirm returned item received" onClick={() => run('return_received', 'Return receipt recorded.')} />
+            <ActionButton label="Uphold claim, queue refund" onClick={() => run('refund', 'Refund queued.')} />
             <ActionButton label="Reject claim, release payout" onClick={() => run('release', 'Payout released.')} />
           </Box>
         );
@@ -383,19 +395,19 @@ export default function OrderPage({ params }: { params: Promise<{ id: string }> 
   const [data, setData] = useState<OrderData | null>(null);
   const [error, setError] = useState('');
 
-  async function load() {
+  const load = useCallback(async () => {
     try {
       const d = await api.get<OrderData>('/api/orders/' + id);
       setData(d);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'We could not find that order.');
     }
-  }
+  }, [id]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps -- fetch this order on mount/id change
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch this order on mount/id change
     load();
-  }, [id]);
+  }, [load]);
 
   if (error) return <div className="mx-auto max-w-3xl px-4 py-16 text-center text-neutral-500">{error}</div>;
   if (!data || !user) return <div className="mx-auto max-w-3xl px-4 py-16 text-center text-neutral-400">Loading…</div>;
@@ -416,7 +428,7 @@ export default function OrderPage({ params }: { params: Promise<{ id: string }> 
         <div className="flex justify-between"><dt>Item</dt><dd>{inr(o.price)}</dd></div>
         <div className="flex justify-between"><dt>Insured shipping</dt><dd>{inr(o.shipping)}</dd></div>
         {!!o.inspectionFee && <div className="flex justify-between"><dt>Full bench test</dt><dd>{inr(o.inspectionFee)}</dd></div>}
-        <div className="flex justify-between border-t border-neutral-200 pt-1 font-medium"><dt>{role === 'ops' ? 'Collected' : 'You paid'}</dt><dd>{inr(o.total)}</dd></div>
+        <div className="flex justify-between border-t border-neutral-200 pt-1 font-medium"><dt>Order total</dt><dd>{inr(o.total)}</dd></div>
         {role === 'ops' && (
           <>
             <div className="flex justify-between"><dt>Seller payout</dt><dd>{inr(o.payout)}</dd></div>
@@ -427,7 +439,12 @@ export default function OrderPage({ params }: { params: Promise<{ id: string }> 
       </dl>
     );
 
-  const escrow = ['refunded', 'cancelled'].includes(o.status)
+  const escrow = o.status==='awaiting_payment' || o.status==='cancelled'
+    ? ['No payment confirmed', 'text-neutral-400']
+    : o.status==='refund_pending' ? ['Refund processing','text-neutral-400']
+    : o.status==='release_pending' ? ['Seller settlement pending','text-neutral-900']
+    : o.status==='payment_review' ? ['Payment under review','text-neutral-400']
+    : o.status==='refunded'
     ? ['Returned to the buyer', 'text-neutral-400']
     : o.status === 'completed'
       ? ['Released to the seller', 'text-neutral-900']
@@ -463,6 +480,7 @@ export default function OrderPage({ params }: { params: Promise<{ id: string }> 
             </div>
           )}
           {o.report && <ReportCard report={o.report} maskSerial={role !== 'ops'} />}
+          <EvidencePanel orderId={o.id}/>
         </div>
         <aside className="flex flex-col gap-4">
           <ActionPanel data={data} reload={load} />

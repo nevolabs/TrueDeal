@@ -45,7 +45,7 @@ export type ListingMode = 'order' | 'hub';
 
 export interface CheckItem {
   label: string;
-  result: 'pass' | 'fail' | '';
+  result: 'pass' | 'fail' | 'na' | '';
 }
 
 export interface InspectionReport {
@@ -87,6 +87,10 @@ export interface Listing {
 }
 
 export type OrderStatus =
+  | 'awaiting_payment'
+  | 'payment_review'
+  | 'refund_pending'
+  | 'release_pending'
   | 'paid'
   | 'in_transit'
   | 'at_hub'
@@ -117,6 +121,8 @@ export interface Tracking {
 }
 
 export interface Order {
+  financialDecision?: 'release' | 'refund' | null;
+  fundsStatus?: 'held' | 'release_authorized' | 'settled' | 'reversed' | 'failed' | null;
   id: string;
   listingId: string;
   buyerId: string;

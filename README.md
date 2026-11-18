@@ -39,79 +39,56 @@ and that payment will be released when agreed conditions are fulfilled.
 business transactions where both buyers and sellers can trade with
 confidence, transparency, and security.
 
-## About this codebase
+## Implementation
 
-This repo is a working prototype of that product, built as a Next.js app. It
-started as a rebuild of [`sell.io`](https://github.com/iamdanusabu/sell.io) —
-a clickable prototype scoped to pre-owned computer hardware in India — and
-the current implementation still reflects that scope (hardware categories,
-₹ pricing, a Bengaluru hub) pending a broader rework to match the product
-description above. State is served through a real (mocked) REST API backed
-by an in-memory store, seeded with sample data on every server start, rather
-than the original's client-only `localStorage`.
+The app now uses Supabase Auth (email/password and JWT sessions), PostgreSQL
+for marketplace state, and Supabase Storage for product photos and private
+order evidence. The original static sell.io reference remains read-only.
 
-> This is a **mock prototype**. No real payments, KYC checks, or courier
-> bookings happen — see `UX_AUDIT.md` and `AGENTS.md` / `CHANGES.md` for full
-> project history and design notes.
+Razorpay Checkout/Route integration is implemented behind a disabled payment
+flag. Route is not yet activated. Hosted schema application and live integration
+verification require project access; no demo data is migrated automatically.
 
-## Requirements
+See [supabase/README.md](supabase/README.md) for database migrations, Auth email
+configuration, operator setup, Storage, payment activation and worker scheduling.
+See [ARCHITECTURE.md](ARCHITECTURE.md) for the design and implementation scope.
 
-- Node.js 18.18 or later (Next.js 16 requirement)
-- npm (a `package-lock.json` is committed; other package managers aren't tested)
+## Run locally
 
-## Run it locally
+Use a Node.js version supported by the installed Next.js release (Node 24 was
+used for verification).
 
 ```sh
 npm install
+# Copy .env.example to .env.local and configure your project settings.
+# Apply the SQL migrations before using account or marketplace data.
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+The Next.js app lives at the repository root. Open http://localhost:3000.
+Create a real account at /login?mode=join and confirm its email. Passwordless
+demo switching and the reset API have been removed.
 
-Sign in from `/login` as one of the three demo accounts (buyer, verified
-seller, or bench agent) — no password needed, they're one-click. Use
-**Reset** behavior via `POST /api/reset` if you want to wipe back to seed
-data (there's no UI button for it currently; call it directly, e.g.
-`curl -X POST http://localhost:3000/api/reset`).
-
-| Demo account | Role |
-|---|---|
-| `arjun@example.com` | Buyer, has orders in progress |
-| `rhea@example.com` | Verified seller, has a sale to hand over |
-| `bench@sellio.example` | Bench agent — inspections, approvals, disputes |
-
-## Other commands
+## Verify
 
 ```sh
-npm run build        # production build
-npm start             # run the production build (after npm run build)
-npx tsc --noEmit       # type-check only
-npx eslint .           # lint
+npm test
+npx tsc --noEmit
+npm run build
+npx eslint .
 ```
 
-Run all three (`tsc`, `build`, `eslint`) before considering any change done —
-see `AGENTS.md` for the full verification expectations.
+Tests run against embedded PostgreSQL and mocked payment HTTP boundaries.
+Hosted end-to-end verification requires a configured Supabase staging project
+and approved Razorpay Route test access. Payments remain disabled by default.
 
-## What's where
+## Main modules
 
-See `AGENTS.md` for the full map of the codebase — business logic, API
-routes, pages, and the mock data/reset model. Short version:
-
-- `lib/data.ts`, `lib/seed.ts`, `lib/store.ts` — business rules, seed data,
-  and the in-memory mock database + order state machine.
-- `app/api/**` — the mock REST API.
-- `app/**/page.tsx` — pages (all client components, fetching from `/api/*`).
-- `components/` — shared UI.
-
-## Notes on persistence
-
-State lives in `globalThis.__sellioState` for the lifetime of the Node
-process — it resets whenever the dev/production server restarts, or on
-`POST /api/reset`. There is no database; this is intentional for a mock.
-
-## Deploying
-
-No special configuration needed beyond a standard Next.js deployment
-(e.g. Vercel). Since all state is in-memory and per-process, a multi-instance
-or serverless deployment will **not** share state between requests/instances
-— fine for demoing the UI and flows, not suitable for anything persistent.
+- app/api/**: validated API routes and payment webhooks.
+- lib/session.ts: verified Supabase identity and current account/role lookup.
+- lib/repository.ts and lib/marketplace-api.ts: persistent marketplace access.
+- supabase/migrations/: transactional schema, permissions and state changes.
+- lib/payments/: Checkout, provider verification and durable payment work.
+- utils/supabase/: browser, server, admin and session-refresh clients.
+- lib/store.ts and lib/seed.ts: unused historical prototype code, not live state.
+- sell.io/: original static reference; read-only.

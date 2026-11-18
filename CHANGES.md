@@ -6,6 +6,69 @@ to replay `git log`.
 
 ---
 
+## 2026-11-18 — Supabase persistence, real authentication and gated payments
+
+- Replaced runtime use of the mock store and unsigned demo identity cookie with
+  verified Supabase Auth users, database roles and persistent marketplace RPCs.
+  Added signup/email confirmation, password login/recovery, and sign-out.
+  Removed demo account switching and the reset endpoint.
+- Added four transactional migrations for marketplace data, restricted grants,
+  row access, immutable quote snapshots, reservations, inspections, disputes,
+  provider records, durable jobs, a balanced gross ledger, audit logs and Storage.
+  No mock identities or financial records are imported. Existing Auth users can
+  receive profile backfill when the initial migration is applied.
+- Ported buyer, seller and ops APIs to the persistent read model. Added product
+  photo uploads and private order evidence, actual courier tracking input and
+  explicit pending payment/refund/settlement UI. The seller review form no longer
+  collects simulated PAN/Aadhaar/bank information or claims a penny test occurred.
+- Added Razorpay server-order Checkout, held Route allocations, signed callback
+  verification, durable signed webhooks, provider reconciliation, operator-verified
+  linked-account binding and a secret-protected scheduled worker endpoint.
+  Unknown financial outcomes stop for reconciliation. Only confirmed capture,
+  refund/reversal or bank settlement changes the matching financial outcome.
+- Payments remain disabled as explicitly requested. No Route access or payment
+  credentials were supplied; no real payment calls were made. The worker endpoint
+  is implemented but no external scheduler has been provisioned.
+- Hosted activation is pending: `npx supabase projects list` reported no access
+  token, no server key is configured, and the hosted `app_state` RPC returned 404.
+  No remote schema migrations or real Auth account writes were performed.
+  `supabase/README.md` contains SQL/CLI application, email templates, operator
+  bootstrap, onboarding and payment-job setup, plus first-release limitations.
+- Added Node/tsx tests with the actual migrations executed in PGlite (local
+  Supabase Auth/Storage stand-ins), and external payment HTTP contract tests.
+  All 15 tests pass. `npx tsc --noEmit`, `npm run build` and `npx eslint .` pass
+  with no lint warnings. Production HTTP smoke checks pass for login/recovery,
+  anonymous sessions, removed demo/reset routes, CSRF/auth rejection, and disabled
+  payments; missing hosted schema returns a clear 503 setup error.
+- The current read model targets a small pilot. Larger-scale pagination,
+  automatic linked-account creation, courier/KYC integrations, notification
+  delivery, detailed provider-fee/tax ledger entries and operational monitoring
+  remain future work described in the activation runbook. Hosted end-to-end
+  Auth/Storage/Razorpay verification is still required before live use.
+
+## 2026-11-18 — Supabase connection foundation and architecture proposal
+
+- Installed `@supabase/supabase-js` and `@supabase/ssr`; added browser/server
+  client helpers under `utils/supabase/` and a Next.js 16 `proxy.ts` that calls
+  `getClaims()` and forwards refreshed cookies and cache headers. Webhooks and
+  static assets bypass session refreshing.
+- Saved the user-supplied project settings in ignored `.env.local`; added a
+  tracked placeholder `.env.example` and setup notes in README.md.
+- Added `ARCHITECTURE.md`: proposed Supabase Auth/PostgreSQL/Storage model,
+  schema, RLS/grants, transaction boundaries, Razorpay held settlements,
+  disputes, refunds, background work and delivery sequence. Route remains
+  conditional on provider eligibility and funds-flow acceptance.
+- This does **not** switch demo auth/data to Supabase. No remote schema was
+  inspected or applied, no real accounts were created and no payment operation
+  was attempted. The reference `sell.io/` was left untouched.
+- Verified: `npx tsc --noEmit`, `npm run build`, and `npx eslint .` passed
+  (the existing two warnings in `app/order/[id]/page.tsx` remain). Production
+  smoke checks returned HTTP 200 for `/`, `/browse`, `/login`, `/api/session`
+  and `/api/listings`, with an anonymous session returning `user: null`.
+- Dependency audit: no production vulnerabilities reported by
+  `npm audit --omit=dev`; install reported 14 high-severity development-tree
+  advisories. No unrelated dependency upgrades were made.
+
 ## 2026-11-18 — README rewritten with the actual product positioning
 
 **What was done**

@@ -1,14 +1,2 @@
-import { fail, guarded, ok } from '@/lib/api-helpers';
-import { getSessionUser } from '@/lib/session';
-import { act } from '@/lib/store';
-
-export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  return guarded(async () => {
-    const me = await getSessionUser();
-    if (!me || me.role !== 'ops') return fail('Not authorized.', 403);
-    const { id } = await params;
-    const { ok: pass } = await req.json();
-    act.reviewListing(id, !!pass);
-    return ok({ done: true });
-  });
-}
+import { marketplaceWrite } from '@/lib/marketplace-api';
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) { return marketplaceWrite(request, "review_listing", (await params).id); }

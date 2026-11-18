@@ -131,7 +131,7 @@ function Dashboard() {
         {[
           ['Live listings', listings.filter((l) => l.status === 'live').length],
           ['Sales in progress', toAct.length + moving.length],
-          ['Held in escrow for you', inr(sum(pending))],
+          ['Seller settlements held', inr(sum(pending.filter(o=>o.fundsStatus==='held')))],
           ['Paid out', inr(sum(paidOut))],
         ].map(([label, value]) => (
           <div key={label} className="rounded-xl border border-neutral-200 p-4">
