@@ -26,6 +26,7 @@ function LoginInner() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
+    setMessage('');
     if (!email || !password || (join && (!name || !city))) {
       setError('Please fill in every field.');
       return;
@@ -89,8 +90,8 @@ function LoginInner() {
             Password
             <input type="password" className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2" value={password} onChange={(e) => setPassword(e.target.value)} />
           </label>
-          {error && <div className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
-          {message && <p role="status" className="rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{message}</p>}
+          {error && <div role="alert" className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
+          {message && !error && <p role="status" className="rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{message}</p>}
           {search.get('error') === 'confirmation' && <p role="alert" className="text-sm text-red-700">That confirmation link is invalid or expired. Please request a new email.</p>}
           <button
             disabled={busy}
@@ -111,7 +112,7 @@ function LoginInner() {
       <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-5 text-sm text-neutral-600">
         <h2 className="font-semibold text-neutral-900">One account for buying and selling</h2>
         <p className="mt-2">Confirm your email to get started. Sellers complete a separate verification review before listing an item.</p>
-        <p className="mt-2">Your password is managed securely by Supabase Auth.</p>
+        <p className="mt-2">Your TrueDeal account uses secure sign-in and email verification.</p>
       </div>
     </div>
   );

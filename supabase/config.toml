@@ -242,17 +242,29 @@ otp_length = 6
 # Number of seconds before the email OTP expires (defaults to 1 hour).
 otp_expiry = 3600
 
-# Use a production-ready SMTP server
+# The hosted project uses owner-configured Gmail SMTP in the dashboard.
+# This file configures the LOCAL Supabase stack, not hosted Auth settings.
+# Optional local Gmail delivery: uncomment this block, replace both email
+# placeholders with the same Gmail address and set GMAIL_SMTP_APP_PASSWORD
+# in ignored .env. Local email capture remains the default.
 # [auth.email.smtp]
 # enabled = true
-# host = "smtp.sendgrid.net"
-# port = 587
-# user = "apikey"
-# pass = "env(SENDGRID_API_KEY)"
-# admin_email = "admin@email.com"
-# sender_name = "Admin"
+# host = "smtp.gmail.com"
+# port = 465
+# user = "yourname@gmail.com"
+# pass = "env(GMAIL_SMTP_APP_PASSWORD)"
+# admin_email = "yourname@gmail.com"
+# sender_name = "TrueDeal"
 
-# Uncomment to customize email template
+# Local TrueDeal templates; copy these bodies into hosted email templates too.
+[auth.email.template.confirmation]
+subject = "Confirm your TrueDeal email"
+content_path = "./supabase/templates/confirmation.html"
+
+[auth.email.template.recovery]
+subject = "Reset your TrueDeal password"
+content_path = "./supabase/templates/recovery.html"
+
 # [auth.email.template.invite]
 # subject = "You have been invited"
 # content_path = "./supabase/templates/invite.html"
