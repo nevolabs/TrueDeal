@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { PGlite } from '@electric-sql/pglite';
+import { insertSampleListings, sampleUsers, sampleListings, sampleSeed } from '../scripts/sample-catalog.mjs';
 
 const buyer='10000000-0000-4000-8000-000000000001';
 const seller='10000000-0000-4000-8000-000000000002';
@@ -10,7 +11,7 @@ const stranger='10000000-0000-4000-8000-000000000004';
 async function database(bundle = false) {
   const db=new PGlite();
   await db.exec(`create role anon; create role authenticated; create role service_role bypassrls;
-    create schema auth; create table auth.users(id uuid primary key,email text,raw_user_meta_data jsonb default '{}');
+    create schema auth; create table auth.users(id uuid primary key,email text,raw_user_meta_data jsonb default '{}',raw_app_meta_data jsonb default '{}',email_confirmed_at timestamptz);
     create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
     grant usage on schema public,auth to anon,authenticated,service_role;
     grant execute on function auth.uid() to anon,authenticated,service_role;`);
@@ -220,5 +221,60 @@ test('reservation snapshots server prices, blocks double claims and unauthorized
     const state=await db.query<{state:{orders:unknown[]}}>('select public.app_state() as state');
     assert.equal(state.rows[0].state.orders.length,0);
     await assert.rejects(command(db,'dispute',order,{reason:'Wrong item',detail:'Wrong item delivered'}));
+  } finally {await db.close();}
+});
+
+test('sample catalogue publishes all original images with sellers, integer paise and no financial or verification records', async () => {
+  const db=await database();
+  try {
+    const userIds:Record<string,string>={};
+    for(const [index,user] of sampleUsers.entries()) {
+      const id=`d4e00000-0000-4000-8000-${String(index+1).padStart(12,'0')}`;
+      userIds[user.key]=id;
+      await db.query('insert into auth.users(id,email,raw_user_meta_data,raw_app_meta_data,email_confirmed_at) values($1,$2,$3,$4,now())',
+        [id,user.email,JSON.stringify({name:user.name,city:user.city}),JSON.stringify({sampleSeed})]);
+    }
+    await insertSampleListings(db,userIds);
+    // A rerun must preserve later edits rather than resetting listings.
+    await db.query('update public.listings set price_paise=600000 where id=$1',[sampleListings[0].id]);
+    await insertSampleListings(db,userIds);
+    assert.equal((await db.query<{price_paise:number}>('select price_paise from public.listings where id=$1',[sampleListings[0].id])).rows[0].price_paise,600000);
+    const rows=(await db.query<{price_paise:number;attributes:{title:string;img:string};seller_id:string}>("select * from public.listings where attributes->>'sampleSeed'=$1",[sampleSeed])).rows;
+    assert.equal(rows.length,14);
+    assert.equal(new Set(rows.map(row=>row.seller_id)).size,4);
+    for(const row of rows) {
+      assert.ok(Number.isInteger(row.price_paise));
+      assert.match(row.attributes.title,/^\[Demo\]/);
+      await readFile(`public${row.attributes.img}`);
+    }
+    assert.equal((await db.query('select * from public.orders')).rows.length,0);
+    assert.equal((await db.query('select * from public.seller_verifications')).rows.length,0);
+    assert.equal((await db.query('select * from public.seller_accounts')).rows.length,0);
+    assert.equal((await db.query('select * from public.ledger_entries')).rows.length,0);
+    assert.equal((await db.query('select * from public.user_roles')).rows.length,1); // Original fixture operator only.
+    await asUser(db,'','anon');
+    const state=(await db.query<{state:{listings:unknown[];users:unknown[];orders:unknown[]}}>('select public.app_state() as state')).rows[0].state;
+    assert.equal(state.listings.length,14);
+    assert.equal(state.users.length,4);
+    assert.deepEqual(state.orders,[]);
+  } finally {await db.close();}
+});
+
+test('sample catalogue refuses unrelated identities and rolls back partial listing writes', async () => {
+  const db=await database();
+  try {
+    const userIds:Record<string,string>={};
+    for(const [index,user] of sampleUsers.entries()) {
+      const id=`d4e00000-0000-4000-8000-${String(index+1).padStart(12,'0')}`;
+      userIds[user.key]=id;
+      await db.query('insert into auth.users(id,email,raw_app_meta_data,email_confirmed_at) values($1,$2,$3,now())',
+        [id,user.email,JSON.stringify({sampleSeed})]);
+    }
+    // The fourth seller is needed only after earlier products have been inserted.
+    await db.query("update auth.users set raw_app_meta_data='{}' where id=$1",[userIds.kabir]);
+    await assert.rejects(insertSampleListings(db,userIds),/seed-owned/);
+    assert.equal((await db.query('select * from public.listings')).rows.length,0);
+    await assert.rejects(insertSampleListings(db,{...userIds,asha:buyer}),/seed-owned/);
+    assert.equal((await db.query('select * from public.listings')).rows.length,0);
   } finally {await db.close();}
 });

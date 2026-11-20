@@ -6,6 +6,57 @@ to replay `git log`.
 
 ---
 
+## 2026-11-20 — Sample catalogue activated on the hosted project
+
+- Ran the owner-authorized sample setup using the server key stored only in
+  ignored `.env.local`. Created four sample seller Auth accounts, one buyer and
+  14 live demo listings; generated passwords are in ignored `.demo-accounts.json`.
+- Verified anonymous `/api/listings`, all 14 image URLs and listing/seller detail
+  responses, plus confirmed buyer and seller logins. Payment configuration still
+  reports disabled. No operator grants, KYC approvals or financial records were
+  created. The owner should rotate the server key shared in chat after setup.
+
+## 2026-11-20 — Owner-requested sample accounts and product catalogue
+
+- Added an opt-in preview/apply script for four sample sellers, one buyer and
+  14 clearly labelled live listings using all existing product photographs.
+  Accounts use the Auth Admin API; passwords are random and saved only in an
+  ignored local credential file. No existing user is modified or given roles.
+- Listing inserts are transactional, verify seed-owned confirmed sellers and
+  preserve existing records on reruns. No historical seed, financial records,
+  verification claims, payout accounts or operator grants are imported.
+- Added migration-backed tests for public browse, image paths, money units,
+  idempotency, identity guards and rollback. Hosted activation requires the
+  server-only Supabase secret key in ignored `.env.local`.
+
+## 2026-11-20 — Document the owner's Gmail SMTP setup
+
+- Recorded the owner's reported hosted Gmail SMTP setup and documented the
+  TrueDeal sender name, Gmail host/ports and complete signup/recovery checks.
+  Hosted delivery remains unverified; app Auth calls use hosted SMTP automatically.
+- Replaced the commented local SMTP example with an opt-in Gmail configuration
+  and TrueDeal branding. Local email capture remains the default; no credentials
+  were added. Hosted email templates still require separate installation.
+
+## 2026-11-20 — Signup feedback and TrueDeal email branding
+
+- Clear the prior confirmation notice before each form submission and suppress
+  success feedback when an error is present. Mark form errors as alerts.
+- Translate signup provider codes into actionable rate-limit, email-delivery,
+  password and availability messages; log only provider code/status for diagnosis.
+- Added TrueDeal confirmation/recovery templates and local CLI template settings.
+  Hosted templates and the inbox sender still require Supabase management access
+  and custom SMTP configuration; database credentials cannot update Auth settings.
+
+## 2026-11-20 — Fix signup origin mismatch on the local server
+
+- Resolve the site's origin from the request Host when no canonical site URL
+  is configured, because Next.js can expose its internal hostname in request.url.
+  Use the same origin for signup, recovery emails and confirmation redirects.
+- Keep configured site URLs authoritative and reject missing/cross-site origins
+  and malformed hosts. Added regression coverage for local hostname differences,
+  ports, hostile origins and canonical production URLs.
+
 ## 2026-11-19 — Hosted migrations applied through database authentication
 
 - Used the owner's supplied database credential through the project's IPv4

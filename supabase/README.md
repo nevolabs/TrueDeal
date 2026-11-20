@@ -73,6 +73,69 @@ origin. Do not add arbitrary production redirect domains.
 Enable email/password login and email confirmation. Configure SMTP for real
 email delivery and review Supabase Auth rate limits before public use.
 
+### Gmail SMTP for this project
+
+On 2026-11-20 the owner reported configuring Gmail custom SMTP in the hosted
+Supabase dashboard. Delivery has not yet been independently verified.
+The app already calls Supabase Auth for signup and password recovery; those
+requests automatically use the hosted SMTP settings. No Gmail client, separate
+mail API, or SMTP credentials are needed in the Next.js application.
+
+Use these values in Authentication → Emails → SMTP Settings:
+
+| Field | Value |
+| --- | --- |
+| Sender email | The Gmail address you configured |
+| Sender name | **TrueDeal** (replace `My App` if copied from the setup guide) |
+| Host | `smtp.gmail.com` |
+| Port | `465` for implicit TLS, or `587` for STARTTLS |
+| Username | The same Gmail address as the sender |
+| Password | The Google app password, saved in Supabase's SMTP settings |
+
+See [Google's SMTP settings](https://developers.google.com/workspace/gmail/imap/imap-smtp)
+and [Supabase's Google SMTP guide](https://supabase.com/kb/troubleshooting/using-google-smtp-with-supabase-custom-smtp-ZZzU4Y).
+Saving SMTP settings does not install the TrueDeal email bodies; apply the
+templates below separately. Changes to hosted SMTP take effect in Supabase
+without rebuilding Next.js. Existing API code still enforces email confirmation.
+
+To verify the complete flow, create an account through `/login?mode=join` with
+an inbox you control, check the sender name and branded confirmation email,
+open the confirmation link, then sign in. Also request a password reset from
+`/auth/forgot-password` and verify its link. An Invite User email tests SMTP,
+but does not validate the application's signup confirmation template or flow.
+If signup fails, use its displayed error and Supabase Auth logs to distinguish
+SMTP authentication/delivery problems from rate limits or account validation.
+
+### TrueDeal email branding (hosted setup required)
+
+The repository includes branded confirmation and recovery HTML in
+`supabase/templates/`, referenced by the local CLI configuration. Editing these
+files does **not** change hosted Supabase Auth settings.
+
+In the hosted project's Authentication email templates, set:
+
+| Template | Subject | HTML body |
+| --- | --- | --- |
+| Confirm signup | Confirm your TrueDeal email | `supabase/templates/confirmation.html` |
+| Reset password | Reset your TrueDeal password | `supabase/templates/recovery.html` |
+
+Keep the hosted Site URL set to the actual website origin. These templates send
+users to `/auth/confirm` with a hashed token; they do not expose an access token
+or depend on the signup browser's PKCE verifier.
+
+For the inbox sender to display **TrueDeal**, configure custom SMTP in the
+hosted project's Authentication email settings: use sender name `TrueDeal`, a
+sender address verified by your email provider, and that provider's SMTP host,
+port and credentials. SMTP credentials belong only in Supabase's hosted SMTP
+settings, never in browser environment variables. Do not invent a sender
+domain or enable SMTP without working provider credentials.
+
+If custom SMTP is disabled, the built-in email service is restricted to project team email addresses and
+currently permits two emails per hour. Delivery restrictions and rate limits
+can therefore reject signup even when the form is valid. See the official
+[SMTP guide](https://supabase.com/docs/guides/auth/auth-smtp) and
+[rate limits](https://supabase.com/docs/guides/auth/rate-limits).
+
 The confirmation handler supports PKCE `code` exchange and hashed email tokens.
 For confirmation links that work across devices, use these email-template
 destinations in Supabase:
@@ -89,6 +152,48 @@ Sign up through `/login?mode=join`, confirm the email, and sign in using the
 password. Password recovery starts at `/auth/forgot-password`. Existing demo
 emails do not become real accounts automatically. The old `sellio_uid`
 cookie is ignored, `POST /api/session` is gone, and `/api/reset` is gone.
+
+## Optional: sample sellers and catalogue
+
+Activated on the hosted project on 2026-11-20: five confirmed sample Auth
+accounts and 14 live demo listings. Anonymous browse, all product image/detail
+responses, buyer/seller logins and disabled payment configuration were verified.
+
+The owner requested dummy accounts and listings on 2026-11-20. The opt-in
+catalogue script creates four confirmed sample seller Auth accounts, one
+confirmed buyer Auth account and 14 live listings linked to the existing
+`public/img` product photographs. Every title starts with `[Demo]`; descriptions
+state that these items are sample data and are not offered for sale. Prices
+are illustrative, stored as integer paise, with no invented sales history.
+
+Preview without credentials or writes:
+
+```sh
+npm run demo:seed
+```
+
+To apply, set `SUPABASE_SECRET_KEY` and the existing database credentials in
+ignored `.env.local`, keep payments disabled, then run:
+
+```sh
+npm run demo:seed -- --apply
+```
+
+Account creation uses Supabase's server-side Admin API with `email_confirm`:
+reserved `.invalid` addresses do not receive email. Generated login passwords
+are saved only in ignored `.demo-accounts.json`, not printed or committed.
+Keep that file private. Existing non-demo Auth accounts are never updated,
+confirmed or assigned roles. Rerunning reuses seed-owned accounts and preserves
+existing listings, including any changes made after seeding. If Auth creation
+is interrupted, rerun to finish the catalogue; Auth accounts and database writes
+are separate operations, so some sample accounts may already exist.
+
+Seller accounts here mean login identities and seller profiles. The script
+does not grant admin/operator roles, create KYC approvals or inspection reports,
+configure Razorpay payout destinations, or insert orders or financial records.
+Sample sellers still need real verification before creating additional listings
+through the regular API. The historical `lib/seed.ts` and read-only `sell.io/`
+are not imported. There is no browser-accessible seed/reset endpoint.
 
 ## 3. Bootstrap an operator
 

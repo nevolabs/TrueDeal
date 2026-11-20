@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test": "tsx --test tests/*.test.ts",
+    "demo:seed": "node scripts/seed-sample-catalog.mjs",
     "db:bundle": "node scripts/build-supabase-setup.mjs",
     "db:login": "supabase login",
     "db:link": "supabase link fgcgmycoyxrkznskgkpa",
