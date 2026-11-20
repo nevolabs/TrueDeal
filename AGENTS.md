@@ -32,10 +32,13 @@ records into the live database.
 
 ## Current activation state
 
-On 2026-11-18 the code and migrations were implemented locally. No hosted
-migrations were applied because the CLI had no authenticated session. Only
-the project URL and publishable key were supplied. Consult the runbook and
-check the actual deployment state before assuming schema application.
+On 2026-11-19 all four migrations were applied to the hosted project using
+the owner's supplied database credential and the IPv4 session pooler, with
+CA/hostname verification enabled. The existing Auth account was preserved
+and its profile backfilled; no operator grants or financial records were seeded.
+`npm run db:status` and `npm run db:inspect` verify the current hosted state.
+Migration credentials live only in ignored .env.local. Applied migrations
+are immutable; use a new migration for subsequent schema changes.
 
 Payments default to disabled and the user explicitly requested keeping them
 off until Razorpay Route is configured. Do not enable live payments, seed

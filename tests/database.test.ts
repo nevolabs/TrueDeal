@@ -7,7 +7,7 @@ const buyer='10000000-0000-4000-8000-000000000001';
 const seller='10000000-0000-4000-8000-000000000002';
 const ops='10000000-0000-4000-8000-000000000003';
 const stranger='10000000-0000-4000-8000-000000000004';
-async function database() {
+async function database(bundle = false) {
   const db=new PGlite();
   await db.exec(`create role anon; create role authenticated; create role service_role bypassrls;
     create schema auth; create table auth.users(id uuid primary key,email text,raw_user_meta_data jsonb default '{}');
@@ -20,6 +20,10 @@ async function database() {
     alter table storage.objects enable row level security;
     create function storage.foldername(name text) returns text[] language sql immutable as $$ select (string_to_array(name,'/'))[1:array_length(string_to_array(name,'/'),1)-1] $$;
     grant usage on schema storage to authenticated; grant select,insert on storage.objects to authenticated;`);
+  if (bundle) {
+    await db.exec(await readFile('supabase/setup.sql','utf8'));
+    return db;
+  }
   await db.exec(await readFile('supabase/migrations/202611180001_marketplace.sql','utf8'));
   await db.exec(await readFile('supabase/migrations/202611180002_payments.sql','utf8'));
   await db.exec(await readFile('supabase/migrations/202611180003_storage.sql','utf8'));
@@ -30,6 +34,20 @@ async function database() {
   await db.query(`insert into public.user_roles values($1,'ops')`,[ops]);
   return db;
 }
+test('single-file setup installs the schema without creating accounts or paid transactions',async()=>{
+  const db=await database(true);
+  try {
+    assert.equal((await db.query('select * from public.profiles')).rows.length,0);
+    assert.equal((await db.query('select * from public.user_roles')).rows.length,0);
+    assert.equal((await db.query('select * from public.orders')).rows.length,0);
+    assert.equal((await db.query('select * from public.payment_attempts')).rows.length,0);
+    assert.equal((await db.query('select * from storage.buckets')).rows.length,2);
+    await asUser(db,'','anon');
+    const result=await db.query<{state:{listings:unknown[];orders:unknown[]}}>('select public.app_state() as state');
+    assert.deepEqual(result.rows[0].state.listings,[]);
+    assert.deepEqual(result.rows[0].state.orders,[]);
+  } finally { await db.close(); }
+});
 async function asUser(db:PGlite,id:string,role='authenticated') {
   await db.exec('reset role');
   await db.query(`select set_config('request.jwt.claim.sub',$1,false)`,[id]);

@@ -1,4 +1,8 @@
-@import "tailwindcss";
+/* Keep generated output and dev logs out of Tailwind's watch dependencies. */
+@import "tailwindcss" source(none);
+@source ".";
+@source "../components";
+@source "../lib";
 
 :root {
   --background: #ffffff;

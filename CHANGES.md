@@ -6,6 +6,75 @@ to replay `git log`.
 
 ---
 
+## 2026-11-19 — Hosted migrations applied through database authentication
+
+- Used the owner's supplied database credential through the project's IPv4
+  session pooler in Singapore. Stored credentials only in ignored `.env.local`.
+  Added a password-based CLI wrapper, a public Supabase CA certificate and the
+  `pg` development dependency for read-only inspection. TLS certificate and
+  hostname verification remain enabled; no browser/CLI-account login is needed.
+- Inspected the target first: no public tables or migration history, one existing
+  Auth account. Previewed exactly the four local migrations, then applied them
+  using Supabase CLI. The existing Auth account was preserved and its profile
+  backfilled. No operator grants, orders or payment records were seeded.
+- Verified all four hosted migration versions match local history; a second
+  preview reports up to date. All public tables have RLS, anonymous mutation
+  is denied, anonymous browse is permitted, and order evidence is private.
+  `/api/listings` now returns HTTP 200 with empty listings; payment configuration
+  still reports disabled. No payment credentials or live operations were enabled.
+- Updated activation documents to reflect the hosted schema and working
+  password-authenticated migration path. Applied migration files are now immutable.
+
+## 2026-11-19 — Project migration commands
+
+- Pinned Supabase CLI 3.2.0 as a development dependency and initialized its
+  versioned project configuration. Added `db:login`, `db:plan`, `db:migrate`
+  and `db:status` scripts. The remote commands explicitly target TrueDeal's
+  project ref, skip Vault changes and do not include seed data.
+- Made CLI migrations the preferred setup path; the SQL bundle remains an
+  optional manual initial-setup artifact. No automatic migration runs are
+  added to app startup or request handling. Hosted application still requires
+  the owner's Supabase login before commands can read/apply remote history.
+- The first `db:plan` parsed the project configuration and selected the intended
+  ref, but stopped with `DbConfigIpv6Error` because direct IPv6 is unavailable.
+  No database changes occurred. Authentication/linking and an IPv4 pooler
+  connection are the remaining prerequisites for hosted application.
+
+## 2026-11-19 — One-file hosted database setup
+
+- Added `npm run db:bundle` and generated `supabase/setup.sql` for initial setup
+  through the Supabase SQL Editor. The four reviewed migrations are combined
+  inside one transaction; no demo financial records or operator privileges are
+  seeded. Source migrations remain the canonical files.
+- CLI access was checked again and still has no authentication token. No hosted
+  database changes were applied. The SQL Editor setup is ready for the owner to
+  execute without sharing database credentials in chat.
+
+## 2026-11-19 — Fix conflicting local servers and request error handling
+
+- Diagnosed two different Next.js projects answering port 3000: TrueDeal on
+  IPv6 and MISMRevamp on IPv4. Their `/api/payments/config` responses differed
+  (200 versus 404), allowing localhost connections to reach different apps.
+- Moved TrueDeal development to `127.0.0.1:3001` and updated the example site
+  origin/setup instructions. Stopped the old TrueDeal listener, and stopped
+  MISMRevamp's port-3000 listener at the user's explicit request.
+- Separately reproduced repeated Turbopack entry restarts through its actual
+  `/_next/hmr` connection. Tailwind's automatic project-root scanning registered
+  broad watch dependencies. Restricted scanning to app/components/lib and
+  restarted the dev server to clear old dependencies; a fresh six-second HMR
+  observation contained only initial connection/sync messages and no restarts.
+- Added useful API errors for network failures and unexpected HTML responses.
+  The home page now catches listing failures and shows a message instead of
+  leaving an unhandled rejected fetch. Supabase setup errors remain visible.
+- Added API error regression tests and an actual Tailwind compiler/scanner test
+  covering watch scope and utility generation. All 18 tests and the production
+  build pass. TypeScript and lint pass.
+  A live HMR probe also wrote generated log output repeatedly and observed zero
+  restart updates, verifying those writes no longer retrigger compilation.
+  Both localhost:3001 and 127.0.0.1:3001 return the TrueDeal configuration.
+  Browser automation was unavailable; live browser refresh behavior was not
+  directly observed after the fix. Work is on `fix/local-refresh-loop`.
+
 ## 2026-11-18 — Supabase persistence, real authentication and gated payments
 
 - Replaced runtime use of the mock store and unsigned demo identity cookie with

@@ -20,15 +20,21 @@ const STEPS = [
 export default function HomePage() {
   const [listings, setListings] = useState<Listing[]>([]);
   const [total, setTotal] = useState(0);
+  const [error, setError] = useState('');
 
   useEffect(() => {
+    let active = true;
     api.get<{ listings: Listing[]; total: number }>('/api/listings').then((d) => {
+      if (!active) return;
       const featured = [...d.listings]
         .sort((a, b) => Number(b.mode === 'hub') - Number(a.mode === 'hub') || b.price - a.price)
         .slice(0, 8);
       setListings(featured);
       setTotal(d.total);
+    }).catch((e: unknown) => {
+      if (active) setError(e instanceof Error ? e.message : 'Listings are temporarily unavailable.');
     });
+    return () => { active = false; };
   }, []);
 
   const sample = listings.find((l) => l.id === 'l_gpu');
@@ -109,6 +115,7 @@ export default function HomePage() {
             Browse all →
           </Link>
         </div>
+        {error && <p role="alert" className="mb-4 rounded-md bg-amber-50 p-4 text-sm text-amber-900">{error}</p>}
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
           {listings.map((l) => (
             <ListingCard key={l.id} listing={l} />

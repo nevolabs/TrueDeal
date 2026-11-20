@@ -1,11 +1,24 @@
 export class ApiError extends Error {}
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, {
-    ...init,
-    headers: { 'Content-Type': 'application/json', ...(init?.headers || {}) },
-  });
-  const data = await res.json().catch(() => ({}));
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      ...init,
+      headers: { 'Content-Type': 'application/json', ...(init?.headers || {}) },
+    });
+  } catch {
+    throw new ApiError('Could not connect to TrueDeal. Check your connection and that the local server is running.');
+  }
+  let data;
+  try {
+    data = await res.json();
+  } catch {
+    throw new ApiError('The server returned an unexpected response. Check that you opened the TrueDeal address.');
+  }
+  if (!data || typeof data !== 'object' || Array.isArray(data)) {
+    throw new ApiError('The server returned an unexpected response.');
+  }
   if (!res.ok) throw new ApiError(data.error || 'Something went wrong.');
   return data as T;
 }

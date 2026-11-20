@@ -5,22 +5,49 @@ fallback to demo accounts, seed orders or in-memory state.
 
 ## 1. Apply the database migrations
 
-Target project: `fgcgmycoyxrkznskgkpa`. Its existing schema was not modified in
-this session: the available CLI had no access token. Review the project's
-existing objects before applying these initial migrations. Do not run them
-against an unrelated database or import mock financial records.
+Target project: `fgcgmycoyxrkznskgkpa`. All four migrations were applied on
+2026-11-19. The existing Auth account was preserved and its profile backfilled.
+Hosted history matches all local versions; no operators, orders or payment
+records were seeded. Do not rerun the initial SQL setup against this project.
 
-With the Supabase CLI:
+The preferred workflow is password-based code migrations. Supabase CLI 3.2.0
+is pinned as a development dependency. The wrapper loads the project's
+database host/user/password from ignored `.env.local`, verifies TLS against
+the included public Supabase CA, and supplies the password through child-process
+environment variables rather than command-line arguments. It needs no browser
+or personal access token:
 
 ```sh
-npx supabase login
-npx supabase init
-npx supabase link --project-ref fgcgmycoyxrkznskgkpa
-npx supabase db push --dry-run
-npx supabase db push
+npm run db:plan      # preview pending migrations; no schema changes
+npm run db:migrate   # apply pending migrations to the target project
+npm run db:status    # verify local and hosted migration history
+npm run db:inspect   # read-only schema, permission and count checks
 ```
 
-Alternatively run these files, in order, in the project's Supabase SQL Editor:
+These commands use database authentication, not the browser publishable key or
+the application's service key. `db:migrate` uses Supabase's migration history to apply
+only pending files; it does not run the generated setup bundle. After a file
+has been applied, make future changes in a new migration rather than editing
+that applied file. No migrations run automatically during Next.js startup or
+web requests. Vault updates and seed data are excluded from these commands.
+
+This network cannot use the direct IPv6 hostname. The verified connection is
+`aws-1-ap-southeast-1.pooler.supabase.com:5432`, user
+`postgres.fgcgmycoyxrkznskgkpa`. See `.env.example` for variable names; never
+commit the password. The public CA lives in `supabase/certs/`. A successful
+preview is required before applying changes. `db:migrate` is an explicit
+apply command and passes the CLI confirmation flag; it does not run at startup.
+
+`db:login` and `db:link` remain available for optional account-management CLI
+operations, but are not prerequisites for the configured migration commands.
+
+For a project where the TrueDeal schema has not yet been installed, the simplest
+SQL Editor option is the generated `supabase/setup.sql`: paste and run the entire
+file. It combines all migrations in one transaction, so a failure rolls back the
+whole setup. Regenerate it after changing migrations with `npm run db:bundle`.
+Do not run initial setup again against an already installed schema.
+
+Alternatively run these individual files, in order, in the project's Supabase SQL Editor:
 
 1. `migrations/202611180001_marketplace.sql`
 2. `migrations/202611180002_payments.sql`
@@ -39,7 +66,7 @@ disabled; do not drop financial tables to roll back code.
 Use `.env.example` for the complete list of supported variables.
 
 Set `NEXT_PUBLIC_SITE_URL` to the actual origin, for example
-`http://localhost:3000` in development. Set the same Site URL in Supabase Auth
+`http://localhost:3001` in development. Set the same Site URL in Supabase Auth
 and allow the `/auth/confirm` redirect and recovery destination on your own
 origin. Do not add arbitrary production redirect domains.
 

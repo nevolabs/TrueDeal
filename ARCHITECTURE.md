@@ -3,7 +3,8 @@
 Date: 2026-11-18. Status: design with a first implementation in the repository.
 Supabase Auth, persistent marketplace APIs, SQL migrations, Storage, gated
 Razorpay integration and a payment worker endpoint are implemented. Hosted
-schema application and end-to-end provider verification remain pending access.
+schema application is complete as of 2026-11-19; end-to-end provider verification
+remains pending payment configuration.
 Payments remain disabled as requested. See [the activation runbook](supabase/README.md)
 for the implemented scope, manual onboarding/reconciliation boundaries and launch work.
 
@@ -237,10 +238,12 @@ Before launch configure email delivery/redirects, restricted operator onboarding
 
 Required tests for implementation: user A cannot access user B's addresses/orders/evidence; public cannot access KYC; no self-granted ops role; tampered/expired sessions rejected; expired sessions refresh with cache headers; two concurrent checkouts cannot claim one item; duplicate/out-of-order webhooks post once; bad signatures fail; wrong amount/currency cannot fulfil; crash after provider success reconciles; late capture refunds safely; dispute and release cannot both win; provider timeout cannot cause duplicate payout/refund; settlement and refund status reflect confirmed outcomes; hub-stock and onsite paths both work.
 
-Validation now includes embedded PostgreSQL migration/RLS/state-machine tests,
-payment HTTP contract/security tests and application build checks. The supplied
-project's new schema endpoint returned 404 and the CLI had no authenticated
-session. No hosted migrations, real account creation or Razorpay money movement
-were performed during implementation.
+Validation includes embedded PostgreSQL migration/RLS/state-machine tests,
+payment HTTP contract/security tests and application build checks. On 2026-11-19
+all four migrations were applied through a TLS-verified IPv4 session-pooler
+connection. Hosted history matches the local files, all public tables use RLS,
+anonymous mutation is denied, and the app's listings endpoint returns 200.
+The existing Auth account was preserved. No new Auth accounts or real Razorpay
+money movements were created during schema activation.
 
 Supabase references checked for this proposal: [SSR clients and session refresh](https://supabase.com/docs/guides/auth/server-side/creating-a-client?queryGroups=framework&framework=nextjs) and [Row Level Security](https://supabase.com/docs/guides/database/postgres/row-level-security). Next.js proxy and cookies conventions were checked against the installed `node_modules/next/dist/docs/` guides.

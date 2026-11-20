@@ -46,12 +46,17 @@ for marketplace state, and Supabase Storage for product photos and private
 order evidence. The original static sell.io reference remains read-only.
 
 Razorpay Checkout/Route integration is implemented behind a disabled payment
-flag. Route is not yet activated. Hosted schema application and live integration
-verification require project access; no demo data is migrated automatically.
+flag. Route is not yet activated. The four database migrations were applied to
+the hosted Supabase project on 2026-11-19; no demo data was imported. Full
+authenticated application and payment integration verification remains separate.
 
 See [supabase/README.md](supabase/README.md) for database migrations, Auth email
 configuration, operator setup, Storage, payment activation and worker scheduling.
 See [ARCHITECTURE.md](ARCHITECTURE.md) for the design and implementation scope.
+
+Apply schema changes from code with `npm run db:plan`, then `npm run db:migrate`.
+Check history with `npm run db:status`. These commands use the database password
+in ignored `.env.local`; browser/CLI login is not required for this workflow.
 
 ## Run locally
 
@@ -65,7 +70,9 @@ npm install
 npm run dev
 ```
 
-The Next.js app lives at the repository root. Open http://localhost:3000.
+The Next.js app lives at the repository root. Open http://localhost:3001.
+Development binds to IPv4 port 3001 to keep TrueDeal separate from other local
+projects using port 3000. Use the same origin in your Supabase redirect settings.
 Create a real account at /login?mode=join and confirm its email. Passwordless
 demo switching and the reset API have been removed.
 
