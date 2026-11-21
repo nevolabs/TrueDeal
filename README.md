@@ -50,6 +50,12 @@ flag. Route is not yet activated. The four database migrations were applied to
 the hosted Supabase project on 2026-11-19; no demo data was imported. Full
 authenticated application and payment integration verification remains separate.
 
+The fifth migration, applied on 2026-11-20, enforces Storage-backed product
+media. Product photos are referenced by object path in `listing_media`; the API
+returns environment-specific public URLs. Navbar branding uses `site-assets`
+and `NEXT_PUBLIC_BRAND_LOGO_PATH`. See the Storage section in the activation
+runbook for publishing assets and configuring deployments.
+
 See [supabase/README.md](supabase/README.md) for database migrations, Auth email
 configuration, operator setup, Storage, payment activation and worker scheduling.
 See [ARCHITECTURE.md](ARCHITECTURE.md) for the design and implementation scope.
@@ -73,21 +79,30 @@ npm run dev
 The Next.js app lives at the repository root. Open http://localhost:3001.
 Development binds to IPv4 port 3001 to keep TrueDeal separate from other local
 projects using port 3000. Use the same origin in your Supabase redirect settings.
-Create a real account at /login?mode=join and confirm its email. Passwordless
-demo switching and the reset API have been removed.
+Create an account at /login?mode=join using an email and password. With
+Supabase's Confirm email setting disabled, signup signs you in immediately.
+Passwordless demo switching and the reset API have been removed.
 
 ## Verify
 
 ```sh
 npm test
-npx tsc --noEmit
 npm run build
+npx tsc --noEmit
 npx eslint .
 ```
 
 Tests run against embedded PostgreSQL and mocked payment HTTP boundaries.
 Hosted end-to-end verification requires a configured Supabase staging project
 and approved Razorpay Route test access. Payments remain disabled by default.
+
+Browser layout checks use the configured catalogue and do not create accounts
+or orders. Install Chromium once with `npx playwright install chromium`, then
+run `npm run test:browser`. The suite starts/reuses the local dev server and
+checks home/sell at desktop, tablet and mobile widths. Screenshots are written
+to ignored `test-results/`. Set `PLAYWRIGHT_BASE_URL` to check an existing
+production server instead. Tailwind uses the standard PostCSS integration in
+`postcss.config.mjs`; do not add a second CSS loader.
 
 ## Main modules
 

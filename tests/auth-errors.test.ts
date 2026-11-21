@@ -10,6 +10,7 @@ test('signup distinguishes email delivery restrictions from retryable rate limit
     const result = signupError(error);
     assert.equal(result.status, 429);
     assert.match(result.message, /wait before trying again/);
+    assert.doesNotMatch(result.message, /confirmation email/);
   }
 });
 
@@ -25,4 +26,5 @@ test('signup provides actionable validation and availability errors without expo
   assert.doesNotMatch(unexpected.message, /internal-secret-information/);
   // Do not reveal whether a particular address has an account.
   assert.equal(signupError({ code: 'user_already_exists' }).message, signupError({}).message);
+  assert.doesNotMatch(signupError({}).message, /confirm your email/);
 });

@@ -3,12 +3,14 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { PGlite } from '@electric-sql/pglite';
 import { insertSampleListings, sampleUsers, sampleListings, sampleSeed } from '../scripts/sample-catalog.mjs';
+import { imageObjectPath } from '../scripts/media-storage.mjs';
 
+const sellerDetails={legalName:'Seller Name',accountHolder:'Seller Name',pan:'ABCPN1234E',accountNumber:'012345678901',confirmAccountNumber:'012345678901',ifsc:'SBIN0001234'};
 const buyer='10000000-0000-4000-8000-000000000001';
 const seller='10000000-0000-4000-8000-000000000002';
 const ops='10000000-0000-4000-8000-000000000003';
 const stranger='10000000-0000-4000-8000-000000000004';
-async function database(bundle = false) {
+async function database(bundle = false, withMedia = true) {
   const db=new PGlite();
   await db.exec(`create role anon; create role authenticated; create role service_role bypassrls;
     create schema auth; create table auth.users(id uuid primary key,email text,raw_user_meta_data jsonb default '{}',raw_app_meta_data jsonb default '{}',email_confirmed_at timestamptz);
@@ -29,6 +31,9 @@ async function database(bundle = false) {
   await db.exec(await readFile('supabase/migrations/202611180002_payments.sql','utf8'));
   await db.exec(await readFile('supabase/migrations/202611180003_storage.sql','utf8'));
   await db.exec(await readFile('supabase/migrations/202611180004_onboarding.sql','utf8'));
+  if (withMedia) await db.exec(await readFile('supabase/migrations/202611200001_storage_media.sql','utf8'));
+  if (withMedia) await db.exec(await readFile('supabase/migrations/202611200002_site_asset_formats.sql','utf8'));
+  if (withMedia) await db.exec(await readFile('supabase/migrations/202611210001_seller_details_and_gallery.sql','utf8'));
   for(const [id,name] of [[buyer,'Buyer'],[seller,'Seller'],[ops,'Operator'],[stranger,'Other']]) {
     await db.query(`insert into auth.users(id,email,raw_user_meta_data) values($1,$2,$3)`,[id,name+'@test.invalid',JSON.stringify({name,city:'Bengaluru'})]);
   }
@@ -42,7 +47,8 @@ test('single-file setup installs the schema without creating accounts or paid tr
     assert.equal((await db.query('select * from public.user_roles')).rows.length,0);
     assert.equal((await db.query('select * from public.orders')).rows.length,0);
     assert.equal((await db.query('select * from public.payment_attempts')).rows.length,0);
-    assert.equal((await db.query('select * from storage.buckets')).rows.length,2);
+    assert.equal((await db.query('select * from storage.buckets')).rows.length,3);
+    assert.ok((await db.query<{allowed_mime_types:string[]}>("select allowed_mime_types from storage.buckets where id='site-assets'")).rows[0].allowed_mime_types.includes('image/svg+xml'));
     await asUser(db,'','anon');
     const result=await db.query<{state:{listings:unknown[];orders:unknown[]}}>('select public.app_state() as state');
     assert.deepEqual(result.rows[0].state.listings,[]);
@@ -60,11 +66,13 @@ async function command(db:PGlite,action:string,id:string|null=null,body:unknown=
 }
 async function listed(db:PGlite) {
   await asUser(db,seller);
-  await command(db,'submit_kyc',null,{legalName:'Seller Name'});
+  await command(db,'submit_kyc',null,sellerDetails);
   await assert.rejects(command(db,'review_kyc',seller,{pass:true}));
   await asUser(db,ops); await command(db,'review_kyc',seller,{pass:true});
+  await db.exec('reset role');
+  await db.query("insert into storage.objects(bucket_id,name) values('listing-photos',$1)",[`${seller}/aaa.jpg`]);
   await asUser(db,seller);
-  const id=await command(db,'create_listing',null,{title:'Graphics card',brand:'Test',category:'gpu',condition:'good',price:10000,ageMonths:4,handover:'ship',serial:'SECRET-SERIAL',description:'Test graphics card',city:'Bengaluru'});
+  const id=await command(db,'create_listing',null,{title:'Graphics card',brand:'Test',category:'gpu',condition:'good',price:10000,ageMonths:4,handover:'ship',serial:'SECRET-SERIAL',description:'Test graphics card',city:'Bengaluru',imagePaths:[`${seller}/aaa.jpg`]});
   await asUser(db,ops); await command(db,'review_listing',id,{pass:true});
   return id;
 }
@@ -234,10 +242,11 @@ test('sample catalogue publishes all original images with sellers, integer paise
       await db.query('insert into auth.users(id,email,raw_user_meta_data,raw_app_meta_data,email_confirmed_at) values($1,$2,$3,$4,now())',
         [id,user.email,JSON.stringify({name:user.name,city:user.city}),JSON.stringify({sampleSeed})]);
     }
-    await insertSampleListings(db,userIds);
+    const media=await catalogueMedia(db,userIds);
+    await insertSampleListings(db,userIds,media);
     // A rerun must preserve later edits rather than resetting listings.
     await db.query('update public.listings set price_paise=600000 where id=$1',[sampleListings[0].id]);
-    await insertSampleListings(db,userIds);
+    await insertSampleListings(db,userIds,media);
     assert.equal((await db.query<{price_paise:number}>('select price_paise from public.listings where id=$1',[sampleListings[0].id])).rows[0].price_paise,600000);
     const rows=(await db.query<{price_paise:number;attributes:{title:string;img:string};seller_id:string}>("select * from public.listings where attributes->>'sampleSeed'=$1",[sampleSeed])).rows;
     assert.equal(rows.length,14);
@@ -245,13 +254,14 @@ test('sample catalogue publishes all original images with sellers, integer paise
     for(const row of rows) {
       assert.ok(Number.isInteger(row.price_paise));
       assert.match(row.attributes.title,/^\[Demo\]/);
-      await readFile(`public${row.attributes.img}`);
+      assert.match(row.attributes.img,/^https:\/\/storage.test\/storage\/v1\/object\/public\/listing-photos\//);
     }
     assert.equal((await db.query('select * from public.orders')).rows.length,0);
     assert.equal((await db.query('select * from public.seller_verifications')).rows.length,0);
     assert.equal((await db.query('select * from public.seller_accounts')).rows.length,0);
     assert.equal((await db.query('select * from public.ledger_entries')).rows.length,0);
     assert.equal((await db.query('select * from public.user_roles')).rows.length,1); // Original fixture operator only.
+    assert.equal((await db.query('select * from public.listing_media')).rows.length,14);
     await asUser(db,'','anon');
     const state=(await db.query<{state:{listings:unknown[];users:unknown[];orders:unknown[]}}>('select public.app_state() as state')).rows[0].state;
     assert.equal(state.listings.length,14);
@@ -271,10 +281,110 @@ test('sample catalogue refuses unrelated identities and rolls back partial listi
         [id,user.email,JSON.stringify({sampleSeed})]);
     }
     // The fourth seller is needed only after earlier products have been inserted.
+    const media=await catalogueMedia(db,userIds);
     await db.query("update auth.users set raw_app_meta_data='{}' where id=$1",[userIds.kabir]);
-    await assert.rejects(insertSampleListings(db,userIds),/seed-owned/);
+    await assert.rejects(insertSampleListings(db,userIds,media),/seed-owned/);
     assert.equal((await db.query('select * from public.listings')).rows.length,0);
-    await assert.rejects(insertSampleListings(db,{...userIds,asha:buyer}),/seed-owned/);
+    await assert.rejects(insertSampleListings(db,{...userIds,asha:buyer},media),/seller-owned/);
     assert.equal((await db.query('select * from public.listings')).rows.length,0);
   } finally {await db.close();}
+});
+
+async function catalogueMedia(db:PGlite,userIds:Record<string,string>) {
+  const media:Record<string,{path:string;url:string}>={};
+  for(const listing of sampleListings) {
+    const bytes=await readFile(`scripts/fixtures/catalog/${listing.sourceImage}`);
+    const path=imageObjectPath(userIds[listing.seller],bytes,'jpg');
+    await db.query("insert into storage.objects(bucket_id,name) values('listing-photos',$1)",[path]);
+    media[listing.id]={path,url:`https://storage.test/storage/v1/object/public/listing-photos/${path}`};
+  }
+  return media;
+}
+
+test('listing media requires an existing seller-owned storage object even through a direct RPC',async()=>{
+  const db=await database();
+  try{
+    await listed(db);
+    const body={title:'Storage-backed graphics card',brand:'Test',category:'gpu',condition:'good',price:10000,ageMonths:4,handover:'ship',serial:'TEST',description:'A real stored photo',city:'Bengaluru'};
+    const path=`${seller}/abcdef.jpg`;
+    const url=`https://storage.test/storage/v1/object/public/listing-photos/${path}`;
+    await asUser(db,seller);
+    await assert.rejects(command(db,'create_listing',null,{...body,img:'/img/gpu.jpg'}));
+    await assert.rejects(command(db,'create_listing',null,{...body,img:url}));
+    await db.exec('reset role');
+    await db.query("insert into storage.objects(bucket_id,name) values('listing-photos',$1)",[path]);
+    await db.query("insert into storage.objects(bucket_id,name) values('listing-photos',$1)",[`${stranger}/abcdef.jpg`]);
+    await asUser(db,seller);
+    await assert.rejects(command(db,'create_listing',null,{...body,img:url.replace(seller,stranger)}));
+    await assert.rejects(db.query("insert into storage.objects(bucket_id,name) values('site-assets','brand/abcdef.png')"));
+    const id=await command(db,'create_listing',null,{...body,img:url});
+    await asUser(db,ops);await command(db,'review_listing',id,{pass:true});
+    await asUser(db,'','anon');
+    const state=(await db.query<{state:{listings:{id:string;imagePath:string;img?:string}[]}}>('select public.app_state() as state')).rows[0].state;
+    const listing=state.listings.find(listing=>listing.id===id)!;
+    assert.equal(listing.imagePath,path);
+    assert.equal(listing.img,undefined); // URL is derived by the server, never taken from arbitrary attributes.
+  }finally{await db.close();}
+});
+
+test('basic checks unblock pending sellers without granting verified identity or payout access; gallery paths remain owned',async()=>{
+  const db=await database();
+  try {
+    await asUser(db,seller);
+    await assert.rejects(command(db,'submit_kyc',null,{...sellerDetails,pan:'invalid'}));
+    await assert.rejects(command(db,'submit_kyc',null,{...sellerDetails,confirmAccountNumber:'999999999'}));
+    await command(db,'submit_kyc',null,sellerDetails);
+    const paths=[`${seller}/aaa.jpg`,`${seller}/bbb.png`];
+    await db.exec('reset role');
+    const row=(await db.query<{status:string;pan_last4:string;bank_last4:string}>('select * from public.seller_verifications where user_id=$1',[seller])).rows[0];
+    assert.equal(row.status,'pending');assert.equal(row.pan_last4,'234E');assert.equal(row.bank_last4,'8901');
+    assert.ok(!JSON.stringify(row).includes(sellerDetails.accountNumber));
+    assert.ok(!JSON.stringify(row).includes(sellerDetails.pan));
+    for(const path of [...paths,`${stranger}/ccc.jpg`]) await db.query("insert into storage.objects(bucket_id,name) values('listing-photos',$1)",[path]);
+    await asUser(db,seller);
+    const body={title:'Gallery GPU',brand:'Test',category:'gpu',condition:'good',price:10000,ageMonths:0,handover:'ship',serial:'TEST',description:'Two product photos',city:'Bengaluru',imagePaths:paths};
+    for(const invalid of [[],[...paths,paths[0]],[...paths,`${stranger}/ccc.jpg`],[`${seller}/ddd.jpg`],Array(9).fill(paths[0])]) {
+      await assert.rejects(command(db,'create_listing',null,{...body,imagePaths:invalid}));
+    }
+    const id=await command(db,'create_listing',null,body);
+    const state=(await db.query<{state:{users:{id:string;kyc:{status:string;basicStatus:string}}[];listings:{id:string;imagePaths:string[]}[]}}>('select public.app_state() as state')).rows[0].state;
+    assert.deepEqual(state.listings.find(l=>l.id===id)?.imagePaths,paths);
+    assert.equal(state.users.find(u=>u.id===seller)?.kyc.basicStatus,'checked');
+    assert.equal(state.users.find(u=>u.id===seller)?.kyc.status,'pending');
+    await assert.rejects(db.query("select public.marketplace_command_legacy('create_listing',null,'{}')"));
+    await db.exec('reset role');
+    assert.equal((await db.query('select * from public.seller_accounts')).rows.length,0);
+  }finally{await db.close();}
+});
+
+test('legacy catalogue media migrates without resetting prices or replacing later seller photos',async()=>{
+  const db=await database(false,false);
+  try{
+    const userIds:Record<string,string>={};
+    for(const [index,user] of sampleUsers.entries()){
+      const id=`d4e00000-0000-4000-8000-${String(index+1).padStart(12,'0')}`;userIds[user.key]=id;
+      await db.query('insert into auth.users(id,email,raw_app_meta_data,email_confirmed_at) values($1,$2,$3,now())',[id,user.email,JSON.stringify({sampleSeed})]);
+    }
+    const original=sampleListings[0];
+    await db.query("insert into public.listings(id,seller_id,category,price_paise,status,handover,serial,attributes) values($1,$2,'gpu',777700,'withdrawn','ship','TEST',$3)",
+      [original.id,userIds.asha,JSON.stringify({...original.attributes,img:`/img/${original.sourceImage}`})]);
+    const uploaded=sampleListings[1];const existingPath=`${userIds.asha}/987654.jpg`;
+    const existingUrl=`https://storage.test/storage/v1/object/public/listing-photos/${existingPath}`;
+    await db.query("insert into storage.objects(bucket_id,name) values('listing-photos',$1)",[existingPath]);
+    await db.query("insert into public.listings(id,seller_id,category,price_paise,status,handover,serial,attributes) values($1,$2,'cpu',500000,'live','ship','TEST',$3)",
+      [uploaded.id,userIds.asha,JSON.stringify({...uploaded.attributes,img:existingUrl})]);
+    await db.exec(await readFile('supabase/migrations/202611200001_storage_media.sql','utf8'));
+    assert.equal((await db.query<{storage_path:string}>('select storage_path from public.listing_media where listing_id=$1',[uploaded.id])).rows[0].storage_path,existingPath);
+    const media=await catalogueMedia(db,userIds);
+    await insertSampleListings(db,userIds,media);
+    assert.equal((await db.query<{attributes:{img:string}}>('select attributes from public.listings where id=$1',[uploaded.id])).rows[0].attributes.img,existingUrl);
+    const row=(await db.query<{attributes:{img:string};status:string;price_paise:number}>('select * from public.listings where id=$1',[original.id])).rows[0];
+    assert.equal(row.attributes.img,media[original.id].url);assert.equal(row.status,'withdrawn');assert.equal(row.price_paise,777700);
+    const replacement=`${userIds.asha}/123456.jpg`;
+    await db.query("insert into storage.objects(bucket_id,name) values('listing-photos',$1)",[replacement]);
+    const replacementUrl=`https://storage.test/storage/v1/object/public/listing-photos/${replacement}`;
+    await db.query("update public.listings set attributes=jsonb_set(attributes,'{img}',to_jsonb($2::text)) where id=$1",[original.id,replacementUrl]);
+    await insertSampleListings(db,userIds,media);
+    assert.equal((await db.query<{storage_path:string}>('select storage_path from public.listing_media where listing_id=$1',[original.id])).rows[0].storage_path,replacement);
+  }finally{await db.close();}
 });

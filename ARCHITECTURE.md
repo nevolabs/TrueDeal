@@ -58,8 +58,8 @@ Use ordinary user-scoped Supabase clients for reads. Execute multi-row changes i
 
 ## Authentication and authorization
 
-1. Sign up with email/password. Supabase manages credentials and confirmation emails.
-2. Confirm email through a server-side confirmation route and then sign in with `signInWithPassword`.
+1. Sign up with email/password. Supabase manages credentials and JWT sessions.
+2. With Confirm email disabled, signup returns a session immediately. Later sign-ins use `signInWithPassword`. The confirmation callback remains available for password recovery and for any future return to email verification.
 3. The SSR integration stores and refreshes the Supabase session in cookies. `proxy.ts` calls `getClaims()` and preserves cookies and refresh cache headers.
 4. Protected handlers independently verify identity. Use `getUser()` plus a current account/role lookup for money-moving and administrative actions; do not authorize using `getSession()` alone.
 5. Sign out with Supabase Auth. Add password recovery, allowlisted redirect destinations and auth rate limiting before launch.
@@ -222,6 +222,12 @@ Validate request bodies, enforce ownership and return safe DTOs rather than whol
 ## Storage and operations
 
 Use separate Supabase Storage buckets/policies for listing photos and private inspection, shipping and dispute evidence. Use signed URLs for private evidence, ownership-scoped paths, upload limits and content validation. Store file paths and metadata in PostgreSQL, not file bytes.
+
+Implemented product media uses `listing_media.storage_path` as its canonical
+reference, with database checks for seller ownership and object existence.
+The server resolves public URLs from the configured Supabase project. Catalogue
+imports use immutable content hashes; public branding uses the separate
+`site-assets` bucket. Runtime UI images have no local catalogue fallback.
 
 Use distinct development/staging and production data and provider keys. Select backup/PITR and restore procedures appropriate to paid transactions; Storage object recovery is a separate concern from database backup. Run migrations through reviewed files, never ad-hoc production dashboard changes. Pin SDK versions through the lockfile.
 

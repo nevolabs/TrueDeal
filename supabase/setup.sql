@@ -606,4 +606,202 @@ revoke all on function public.activate_seller_account(uuid,uuid,text,text,text) 
 grant execute on function public.activate_seller_account(uuid,uuid,text,text,text) to service_role;
 notify pgrst, 'reload schema';
 
+-- Source: migrations/202611200001_storage_media.sql
+-- Deployment-managed public branding. Browser users have no write policy.
+insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types)
+values('site-assets','site-assets',true,5242880,array['image/jpeg','image/png','image/webp'])
+on conflict(id) do nothing;
+
+create unique index listing_media_position on public.listing_media(listing_id,sort_order);
+
+-- Enforce ownership/existence even when callers invoke marketplace_command
+-- directly instead of going through the Next.js request validator.
+create function public.sync_listing_photo() returns trigger
+language plpgsql security definer set search_path='' as $$
+declare photo text:=coalesce(new.attributes->>'img',''); object_path text;
+begin
+ if photo='' then
+  delete from public.listing_media where listing_id=new.id and sort_order=0;
+  return new;
+ end if;
+ object_path:=substring(photo from '^https?://[^/?#]+/storage/v1/object/public/listing-photos/([^?#]+)$');
+ if object_path is null or object_path !~ ('^'||new.seller_id::text||'/[a-f0-9-]+\.(jpg|png|webp)$') then
+  raise exception 'Use a photo uploaded to this seller account' using errcode='23514';
+ end if;
+ if not exists(select 1 from storage.objects where bucket_id='listing-photos' and name=object_path) then
+  raise exception 'Upload the listing photo first' using errcode='23514';
+ end if;
+ insert into public.listing_media(listing_id,storage_path,sort_order) values(new.id,object_path,0)
+ on conflict(listing_id,sort_order) do update set storage_path=excluded.storage_path;
+ return new;
+end $$;
+revoke all on function public.sync_listing_photo() from public,anon,authenticated;
+create trigger sync_listing_photo after insert or update of attributes,seller_id on public.listings
+for each row execute function public.sync_listing_photo();
+
+-- Backfill existing valid Storage references without modifying the listings.
+-- Local prototype paths are migrated by the explicit catalogue import script.
+insert into public.listing_media(listing_id,storage_path,sort_order)
+select l.id,photo.object_path,0 from public.listings l
+cross join lateral (select substring(l.attributes->>'img' from '^https?://[^/?#]+/storage/v1/object/public/listing-photos/([^?#]+)$') as object_path) photo
+where photo.object_path ~ ('^'||l.seller_id::text||'/[a-f0-9-]+\.(jpg|png|webp)$')
+ and exists(select 1 from storage.objects s where s.bucket_id='listing-photos' and s.name=photo.object_path)
+on conflict(listing_id,sort_order) do nothing;
+
+-- Read-model definition follows. Image URLs are resolved from imagePath by
+-- the server using the configured project; legacy attributes.img is ignored.
+
+create or replace function public.app_state() returns jsonb language plpgsql stable security definer set search_path='' as $$
+declare uid uuid:=auth.uid(); op boolean:=public.is_operator(); result jsonb;
+begin
+ if uid is not null and not exists(select 1 from public.profiles where id=uid and account_status='active') then
+  raise exception 'Account unavailable' using errcode='42501';
+ end if;
+ select jsonb_build_object(
+  'users',coalesce((select jsonb_agg(jsonb_build_object('id',p.id,'name',p.name,'city',p.city,
+   'email','','role',case when op and exists(select 1 from public.user_roles where user_id=p.id) then 'ops' else 'member' end,
+   'joined',extract(epoch from p.created_at)*1000,'deals',(select count(*) from public.orders where seller_id=p.id and status='completed'),
+   'kyc',jsonb_build_object('status',coalesce(v.status,'none'),'legalName',case when op or p.id=uid then v.legal_name end)))
+   from public.profiles p left join public.seller_verifications v on v.user_id=p.id
+   where p.id=uid or op or exists(select 1 from public.listings l where l.seller_id=p.id and l.status in ('live','reserved','sold'))
+    or exists(select 1 from public.orders o where (o.buyer_id=uid or o.seller_id=uid) and p.id in (o.buyer_id,o.seller_id))), '[]'),
+  'listings',coalesce((select jsonb_agg((l.attributes - 'img') || jsonb_build_object('id',l.id,'sellerId',l.seller_id,
+   'imagePath',(select m.storage_path from public.listing_media m where m.listing_id=l.id and m.sort_order=0),'category',l.category,'price',l.price_paise/100.0,'status',l.status,'mode',l.mode,'handover',l.handover,
+   'serial',case when op or l.seller_id=uid then l.serial else '' end,
+   'createdAt',extract(epoch from l.created_at)*1000,
+   'report',(select i.report || jsonb_build_object('serial',case when op or l.seller_id=uid then i.report->>'serial' else 'Hidden' end)
+     from public.inspections i where i.listing_id=l.id and i.passed order by i.created_at desc limit 1)))
+   from public.listings l where l.status='live' or l.seller_id=uid or op or exists(select 1 from public.orders o
+    where o.listing_id=l.id and uid in (o.buyer_id,o.seller_id))), '[]'),
+  'orders',coalesce((select jsonb_agg(jsonb_build_object('id',o.id,'listingId',o.listing_id,'buyerId',o.buyer_id,'sellerId',o.seller_id,
+   'status',o.status,'financialDecision',o.financial_decision,'createdAt',extract(epoch from o.created_at)*1000,
+   'price',s.price_paise/100.0,'shipping',s.shipping_paise/100.0,'inspectionFee',s.inspection_paise/100.0,
+   'fee',s.commission_paise/100.0,'visitFee',s.visit_paise/100.0,'total',s.total_paise/100.0,'payout',s.seller_due_paise/100.0,
+   'tier',s.tier,'handover',s.handover,'fromStock',s.handover='hub','address',case when op or o.buyer_id=uid then s.address else '{}'::jsonb end,
+   'payMethod','Razorpay','handoverCode',case when op or o.seller_id=uid then o.handover_code else '' end,
+   'windowEnds',extract(epoch from o.inspection_deadline_at)*1000,
+   'fundsStatus',(select t.status from public.seller_transfers t where t.order_id=o.id),
+   'timeline',coalesce((select jsonb_agg(jsonb_build_object('status',e.status,'at',extract(epoch from e.created_at)*1000,'note',e.note) order by e.id)
+    from public.order_events e where e.order_id=o.id),'[]'),
+   'report',(select i.report || jsonb_build_object('serial',case when op or o.seller_id=uid then i.report->>'serial' else 'Hidden' end)
+    from public.inspections i where i.order_id=o.id or (s.handover='hub' and i.listing_id=o.listing_id) order by i.created_at desc limit 1),
+   'tracking',(select jsonb_build_object('courier',sh.courier,'awb',sh.tracking_number) from public.shipments sh where sh.order_id=o.id and sh.leg='hub_to_buyer'),
+   'dispute',(select jsonb_build_object('reason',d.reason,'detail',d.detail,'at',extract(epoch from d.created_at)*1000,'resolution',d.resolution) from public.disputes d where d.order_id=o.id)))
+   from public.orders o join public.order_snapshots s on s.order_id=o.id where op or uid in (o.buyer_id,o.seller_id)), '[]')
+ ) into result;
+ return result;
+end $$;
+
+notify pgrst, 'reload schema';
+
+-- Source: migrations/202611200002_site_asset_formats.sql
+-- Only deployment-managed site assets accept SVG logos. Browser users still
+-- have no write policy here; listing photos and private evidence are unchanged.
+update storage.buckets set allowed_mime_types=array['image/jpeg','image/png','image/webp','image/svg+xml']
+where id='site-assets';
+
+-- Source: migrations/202611210001_seller_details_and_gallery.sql
+-- Basic syntax checks are separate from identity verification and payouts.
+-- Full PAN/account numbers are validated transiently and never retained.
+alter table public.seller_verifications
+ add column details_checked_at timestamptz,
+ add column pan_last4 text,
+ add column bank_last4 text,
+ add column ifsc text;
+
+alter function public.marketplace_command(text,uuid,jsonb) rename to marketplace_command_legacy;
+revoke all on function public.marketplace_command_legacy(text,uuid,jsonb) from public,anon,authenticated;
+
+create function public.marketplace_command(action text,entity uuid default null,body jsonb default '{}') returns uuid
+language plpgsql security definer set search_path='' as $$
+declare uid uuid:=auth.uid(); oid uuid; legal text; holder text; pan text; acct text; confirmation text; code text; paths jsonb;
+begin
+ if uid is null or not exists(select 1 from public.profiles where id=uid and account_status='active') then
+  raise exception 'Sign in first' using errcode='42501'; end if;
+ if body is null or jsonb_typeof(body)<>'object' or length(body::text)>32000 then raise exception 'Invalid command body'; end if;
+ if action='submit_kyc' then
+  legal:=regexp_replace(trim(coalesce(body->>'legalName','')),'\s+',' ','g');
+  holder:=regexp_replace(trim(coalesce(body->>'accountHolder','')),'\s+',' ','g');
+  pan:=upper(trim(coalesce(body->>'pan',''))); code:=upper(trim(coalesce(body->>'ifsc','')));
+  acct:=trim(coalesce(body->>'accountNumber','')); confirmation:=trim(coalesce(body->>'confirmAccountNumber',''));
+  if length(legal) not between 2 and 100 or legal !~ '^[[:alpha:] .''-]+$' then raise exception 'Enter your full legal name'; end if;
+  if pan !~ '^[A-Z]{3}P[A-Z][0-9]{4}[A-Z]$' or substring(pan,6,4)='0000' then raise exception 'Enter a valid individual PAN format'; end if;
+  if acct !~ '^[0-9]{9,18}$' or acct ~ '^([0-9])\1+$' then raise exception 'Enter a bank account number with 9–18 digits'; end if;
+  if acct<>confirmation then raise exception 'The account numbers do not match'; end if;
+  if code !~ '^[A-Z]{4}0[A-Z0-9]{6}$' then raise exception 'Enter a valid IFSC format'; end if;
+  if lower(legal)<>lower(holder) then raise exception 'The account holder name must match your legal name'; end if;
+  insert into public.seller_verifications(user_id,legal_name,details_checked_at,pan_last4,bank_last4,ifsc)
+   values(uid,legal,now(),right(pan,4),right(acct,4),code)
+   on conflict(user_id) do update set legal_name=excluded.legal_name,details_checked_at=excluded.details_checked_at,
+    pan_last4=excluded.pan_last4,bank_last4=excluded.bank_last4,ifsc=excluded.ifsc;
+  return uid;
+ elsif action='create_listing' then
+  if not exists(select 1 from public.seller_verifications where user_id=uid and (status='verified' or details_checked_at is not null)) then
+   raise exception 'Complete your seller details first'; end if;
+  if length(trim(coalesce(body->>'title',''))) not between 3 and 90 or length(trim(coalesce(body->>'description',''))) not between 5 and 10000
+   or length(trim(coalesce(body->>'serial',''))) not between 1 and 100 or length(trim(coalesce(body->>'brand',''))) not between 1 and 100
+   or length(trim(coalesce(body->>'city',''))) not between 1 and 100
+   or coalesce(body->>'condition','') not in ('likenew','excellent','good','fair')
+   or coalesce((body->>'ageMonths')::integer,-1) not between 0 and 240 then raise exception 'Invalid listing details'; end if;
+  paths:=body->'imagePaths';
+  -- Compatibility for the old single-photo caller; all new clients send paths.
+  if paths is null and coalesce(body->>'img','')<>'' then
+   paths:=jsonb_build_array(substring(body->>'img' from '^https?://[^/?#]+/storage/v1/object/public/listing-photos/([^?#]+)$'));
+  end if;
+  if paths is null or jsonb_typeof(paths)<>'array' then raise exception 'Upload at least one product photo'; end if;
+  if jsonb_array_length(paths) not between 1 and 8 then raise exception 'Upload one to eight product photos'; end if;
+  insert into public.listings(seller_id,category,price_paise,handover,serial,attributes)
+   values(uid,body->>'category',round((body->>'price')::numeric*100),body->>'handover',body->>'serial',
+    jsonb_build_object('title',body->>'title','brand',body->>'brand','condition',body->>'condition',
+     'description',body->>'description','city',body->>'city','ageMonths',(body->>'ageMonths')::integer,
+     'warranty',coalesce(nullif(body->>'warranty',''),'Out of warranty'),'newPrice',coalesce((body->>'newPrice')::numeric,0),
+     'invoice',coalesce((body->>'invoice')::boolean,false),'box',coalesce((body->>'box')::boolean,false),'imagePaths',paths,'specs','[]'::jsonb)) returning id into oid;
+  return oid;
+ end if;
+ return public.marketplace_command_legacy(action,entity,body);
+end $$;
+revoke all on function public.marketplace_command(text,uuid,jsonb) from public,anon,authenticated;
+grant execute on function public.marketplace_command(text,uuid,jsonb) to authenticated;
+
+create or replace function public.sync_listing_photo() returns trigger
+language plpgsql security definer set search_path='' as $$
+declare paths jsonb:=new.attributes->'imagePaths'; object_path text; entry jsonb; position integer:=0;
+begin
+ if paths is null then
+  if coalesce(new.attributes->>'img','')='' then
+   delete from public.listing_media where listing_id=new.id;
+   return new;
+  end if;
+  paths:=jsonb_build_array(substring(new.attributes->>'img' from '^https?://[^/?#]+/storage/v1/object/public/listing-photos/([^?#]+)$'));
+ end if;
+ if jsonb_typeof(paths)<>'array' then raise exception 'Invalid product photos'; end if;
+ if jsonb_array_length(paths) not between 1 and 8 or
+  (select count(distinct value) from jsonb_array_elements(paths))<>jsonb_array_length(paths) then raise exception 'Upload one to eight different product photos'; end if;
+ delete from public.listing_media where listing_id=new.id;
+ for entry in select value from jsonb_array_elements(paths) loop
+  object_path:=entry #>> '{}';
+  if jsonb_typeof(entry)<>'string' or object_path is null or object_path !~ ('^'||new.seller_id::text||'/[a-f0-9-]+\.(jpg|png|webp)$') then
+   raise exception 'Use a photo uploaded to this seller account' using errcode='23514'; end if;
+  if not exists(select 1 from storage.objects where bucket_id='listing-photos' and name=object_path) then
+   raise exception 'Upload the listing photo first' using errcode='23514'; end if;
+  insert into public.listing_media(listing_id,storage_path,sort_order) values(new.id,object_path,position);
+  position:=position+1;
+ end loop;
+ return new;
+end $$;
+
+alter function public.app_state() rename to app_state_legacy;
+revoke all on function public.app_state_legacy() from public,anon,authenticated;
+create function public.app_state() returns jsonb language plpgsql stable security definer set search_path='' as $$
+declare state jsonb:=public.app_state_legacy();
+begin
+ state:=jsonb_set(state,'{users}',coalesce((select jsonb_agg(u || jsonb_build_object('kyc',u->'kyc' || jsonb_build_object(
+  'basicStatus',case when exists(select 1 from public.seller_verifications v where v.user_id=(u->>'id')::uuid and v.details_checked_at is not null) then 'checked' else 'not_started' end))) from jsonb_array_elements(state->'users') u),'[]'));
+ return jsonb_set(state,'{listings}',coalesce((select jsonb_agg((l-'imagePaths') || jsonb_build_object('imagePaths',coalesce(
+  (select jsonb_agg(m.storage_path order by m.sort_order) from public.listing_media m where m.listing_id=(l->>'id')::uuid),'[]'::jsonb))) from jsonb_array_elements(state->'listings') l),'[]'));
+end $$;
+revoke all on function public.app_state() from public,anon,authenticated;
+grant execute on function public.app_state() to anon,authenticated;
+notify pgrst, 'reload schema';
+
 commit;

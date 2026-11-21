@@ -4,7 +4,7 @@ import { api } from '@/lib/client';
 import { openCheckout } from '@/lib/payments/checkout-client';
 export default function ResumePayment({orderId,onDone}:{orderId:string;onDone:()=>void}) {
   const [busy,setBusy]=useState(false);const [error,setError]=useState('');
-  return <><button disabled={busy} className="rounded-full bg-neutral-900 px-4 py-2 text-sm text-white disabled:opacity-50" onClick={async()=>{
+  return <><button disabled={busy} className="btn" onClick={async()=>{
     setBusy(true);setError('');
     try {
       const details=await api.post<Parameters<typeof openCheckout>[0]>(`/api/orders/${orderId}/checkout`);

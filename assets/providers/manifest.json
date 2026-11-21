@@ -1,0 +1,58 @@
+[
+  {
+    "key": "razorpay",
+    "name": "Razorpay",
+    "role": "Payments",
+    "source": "razorpay.svg",
+    "path": "providers/razorpay-041d7c2e479eff48b0d0505155fabb92cb00b8c02bb6fa0559c3e90e886edbc1.svg"
+  },
+  {
+    "key": "phonepe",
+    "name": "PhonePe",
+    "role": "UPI payments",
+    "source": "phonepe.svg",
+    "path": "providers/phonepe-9752502485193e5539bfcd8f5f7241ca4063befeacef7c0b7d5bd5f24bc539f3.svg"
+  },
+  {
+    "key": "cashfree",
+    "name": "Cashfree",
+    "role": "Payout services",
+    "source": "cashfree.svg",
+    "path": "providers/cashfree-720c4d7067ae9bbb93b7928a105c7f4cc339c51c44e1272f10f9cc79b3088882.svg"
+  },
+  {
+    "key": "delhivery",
+    "name": "Delhivery",
+    "role": "Surface shipping",
+    "source": "delhivery.png",
+    "path": "providers/delhivery-a5013faa26ac18b310792626d652db1e04c06080b86e4003a38258c5f6d929be.png"
+  },
+  {
+    "key": "bluedart",
+    "name": "Blue Dart",
+    "role": "Express delivery",
+    "source": "bluedart.svg",
+    "path": "providers/bluedart-f877e12dd8883e481785c2b6ece8994ebd51b58a8b6b3707a2eff2c9fd9cb5ea.svg"
+  },
+  {
+    "key": "shiprocket",
+    "name": "Shiprocket",
+    "role": "Shipping management",
+    "source": "shiprocket.png",
+    "path": "providers/shiprocket-591ffafe6fd5360ac737c26a3d2c25a62d0285d11b84c7ac95620294ced5b505.png"
+  },
+  {
+    "key": "dhl",
+    "name": "DHL",
+    "role": "Express courier",
+    "source": "dhl.svg",
+    "path": "providers/dhl-b98a5d7827cab09213394840fdabbabad8c2044cd1d686856f2455b2121b7102.svg"
+  },
+  {
+    "key": "digit",
+    "name": "Digit",
+    "role": "Transit insurance",
+    "source": "digit.svg",
+    "path": "providers/digit-7fc94ac8fdc8c6d23fe4093dc5bee463e7665a9fbfae30836559f771bb3133e7.svg"
+  }
+]

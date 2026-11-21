@@ -25,7 +25,7 @@ export async function POST(request:Request) {
       bucket='order-evidence';path=orderId+'/'+path;
     }
     const supabase=await createClient();
-    const {error}=await supabase.storage.from(bucket).upload(path,bytes,{contentType:extension==='jpg'?'image/jpeg':'image/'+extension,upsert:false});
+    const {error}=await supabase.storage.from(bucket).upload(path,bytes,{contentType:extension==='jpg'?'image/jpeg':'image/'+extension,cacheControl:bucket==='listing-photos'?'31536000':'60',upsert:false});
     if(error) throw new AppError('Upload failed. Check that Storage policies are configured.',503);
     if(orderId) {
       const {error:recordError}=await supabase.from('order_evidence').insert({order_id:orderId,submitted_by:me.id,storage_path:path});

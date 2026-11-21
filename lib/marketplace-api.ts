@@ -6,6 +6,7 @@ import { AppError } from './errors';
 import { assertSameOrigin, jsonBody, oneOf, text } from './validation';
 import { CATEGORIES, CONDITIONS, checklistFor } from './data';
 import { paymentsEnabled } from './payments/config';
+import { validateSellerDetails } from './seller-validation';
 
 export function marketplaceRead(request: Request, resource: string, id?: string) {
   return guarded(async () => {
@@ -28,7 +29,7 @@ export function marketplaceRead(request: Request, resource: string, id?: string)
       const listing = state.listings.find(l => l.id === id);
       if (!listing) throw new AppError('Listing not found.', 404);
       const seller = state.users.find(u => u.id === listing.sellerId);
-      return ok({ listing, seller: seller ? { id: seller.id, name: seller.name, city: seller.city, joined: seller.joined, deals: seller.deals } : null });
+      return ok({ listing, seller: seller ? { id: seller.id, name: seller.name, city: seller.city, joined: seller.joined, deals: seller.deals, verified: seller.kyc.status === 'verified' } : null });
     }
     if (resource === 'my_listings') return ok({ listings: state.listings.filter(l => l.sellerId === me!.id) });
     if (resource === 'mine' || resource === 'selling') return ok({ orders: state.orders.filter(o => resource === 'mine' ? o.buyerId === me!.id : o.sellerId === me!.id) });
@@ -44,7 +45,7 @@ export function marketplaceRead(request: Request, resource: string, id?: string)
       const next: Record<string,string> = { in_transit: 'Receive at hub', at_hub: 'Inspect', verified: 'Dispatch', delivered: 'Release when due', disputed: 'Resolve claim', payment_review: 'Review payment', release_pending: 'Release processing', refund_pending: 'Refund processing' };
       const withListing = (o: typeof state.orders[number]) => ({ order: o, listing: state.listings.find(l => l.id === o.listingId), seller: state.users.find(u => u.id === o.sellerId), buyer: state.users.find(u => u.id === o.buyerId) });
       const pendingListings = state.listings.filter(l => l.status === 'pending');
-      const pendingKyc = state.users.filter(u => u.kyc.status === 'pending');
+      const pendingKyc: typeof state.users = [];
       const queue = state.orders.filter(o => next[o.status]);
       return ok({ stats: { queueCount: queue.length, pendingListings: pendingListings.length, pendingKyc: pendingKyc.length,
         held: state.orders.filter(o => o.fundsStatus === 'held').reduce((sum,o) => sum+o.payout,0) },
@@ -76,6 +77,13 @@ export function marketplaceWrite(request: Request, action: string, id?: string) 
         if(!image.startsWith(prefix) || !/^[a-f0-9-]+\.(jpg|png|webp)$/.test(image.slice(prefix.length))) throw new AppError('Upload your listing photo first.');
         payload.img=image;
       }
+      if (body.imagePaths !== undefined) {
+        if (!Array.isArray(body.imagePaths) || body.imagePaths.length < 1 || body.imagePaths.length > 8 ||
+            new Set(body.imagePaths).size !== body.imagePaths.length || body.imagePaths.some(path => typeof path !== 'string' || !path.startsWith(me.id + '/') || !/^[a-f0-9-]+\.(jpg|png|webp)$/.test(path.slice(me.id.length + 1)))) {
+          throw new AppError('Upload between one and eight different product photos.');
+        }
+        payload.imagePaths = body.imagePaths;
+      } else if (!body.img) throw new AppError('Upload at least one product photo.');
       if (!Number.isFinite(payload.price) || !Number.isInteger(payload.ageMonths) || Number(payload.ageMonths)<0 || Number(payload.ageMonths)>240) throw new AppError('Invalid price or age.');
     } else if (action === 'reserve') {
       if (!paymentsEnabled()) throw new AppError('Payments are not enabled yet. Checkout will be available after payment onboarding.',503);
@@ -86,9 +94,7 @@ export function marketplaceWrite(request: Request, action: string, id?: string) 
         line:text(address?.line,'address',300), city:text(address?.city,'city'), pin:text(address?.pin,'postcode',6,6) } };
       if (!/^\d{6}$/.test((payload.address as {pin:string}).pin)) throw new AppError('Enter a six-digit PIN code.');
     } else if (action === 'submit_kyc') {
-      // Only retain the review request. Sensitive identity/bank details belong
-      // in provider onboarding, never this application's public schema.
-      payload = { legalName: text(body.legalName,'legal name',100,2) };
+      payload = validateSellerDetails(body);
     } else if (action === 'review_kyc' || action === 'review_listing') {
       if (typeof body.pass !== 'boolean') throw new AppError('Select an approval outcome.');
       payload = {pass:body.pass};

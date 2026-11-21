@@ -9,13 +9,15 @@
     "lint": "eslint",
     "test": "tsx --test tests/*.test.ts",
     "demo:seed": "node scripts/seed-sample-catalog.mjs",
+    "assets:publish": "node scripts/publish-brand-assets.mjs",
     "db:bundle": "node scripts/build-supabase-setup.mjs",
     "db:login": "supabase login",
     "db:link": "supabase link fgcgmycoyxrkznskgkpa",
     "db:plan": "node scripts/supabase-db.mjs plan",
     "db:migrate": "node scripts/supabase-db.mjs migrate",
     "db:status": "node scripts/supabase-db.mjs status",
-    "db:inspect": "node scripts/supabase-db.mjs inspect"
+    "db:inspect": "node scripts/supabase-db.mjs inspect",
+    "test:browser": "playwright test"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
@@ -26,7 +28,8 @@
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.16",
-    "@tailwindcss/turbopack": "4.3.3",
+    "@playwright/test": "1.65.1",
+    "@tailwindcss/postcss": "4.3.3",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

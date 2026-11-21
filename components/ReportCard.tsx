@@ -15,11 +15,11 @@ export default function ReportCard({
 }) {
   const grade = CONDITIONS[report.grade];
   return (
-    <div className="rounded-xl border border-neutral-200 bg-white p-4">
+    <div className="rounded-xl border border-line bg-surface p-4">
       <div className="mb-3 flex items-center justify-between">
         <div>
-          <div className="font-mono text-xs text-neutral-500">{report.id}</div>
-          <div className="text-sm text-neutral-500">
+          <div className="font-mono text-xs text-muted-foreground">{report.id}</div>
+          <div className="text-sm text-muted-foreground">
             Inspected by {report.agent} · {new Date(report.at).toLocaleDateString('en-IN')}
           </div>
         </div>
@@ -33,11 +33,11 @@ export default function ReportCard({
       </div>
       <dl className="mb-3 grid grid-cols-2 gap-2 text-sm">
         <div>
-          <dt className="text-neutral-500">Serial checked</dt>
+          <dt className="text-muted-foreground">Serial checked</dt>
           <dd className="font-mono">{maskSerial ? maskedSerial(report.serial) : report.serial}</dd>
         </div>
         <div>
-          <dt className="text-neutral-500">Grade confirmed</dt>
+          <dt className="text-muted-foreground">Grade confirmed</dt>
           <dd>{grade?.label || report.grade}</dd>
         </div>
       </dl>
@@ -59,7 +59,7 @@ export default function ReportCard({
           </li>
         ))}
       </ul>
-      {report.notes && <p className="text-sm text-neutral-700">{report.notes}</p>}
+      {report.notes && <p className="text-sm text-secondary-foreground">{report.notes}</p>}
     </div>
   );
 }

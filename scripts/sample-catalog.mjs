@@ -9,6 +9,7 @@ export const sampleUsers = [
 
 // Catalogue only. Do not import the historical prototype seed: it also contains
 // invented verification reports, orders and financial history.
+/** @type {Array<[string,string,string,string,string,number,number,string,number,string[][]]>} */
 const products = [
   ['gpu', 'asha', 'gpu', 'NVIDIA RTX 2080 Ti Founders Edition', 'NVIDIA', 24500, 105000, 'excellent', 58, [['Memory', '11 GB GDDR6'], ['Cooling', 'Dual fan']]],
   ['ryzen', 'asha', 'cpu', 'AMD Ryzen 7 3700X + ASUS TUF B550M-Plus', 'AMD / ASUS', 13500, 41000, 'excellent', 50, [['Cores / threads', '8 / 16'], ['Socket', 'AM4']]],
@@ -28,10 +29,10 @@ const products = [
 
 export const sampleListings = products.map(([image, seller, category, title, brand, price, newPrice, condition, ageMonths, specs], index) => ({
   id: `d3e00000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`,
-  seller, category, pricePaise: price * 100, serial: `DEMO-${image.toUpperCase()}`,
+  seller, category, sourceImage: `${image}.jpg`, pricePaise: price * 100, serial: `DEMO-${image.toUpperCase()}`,
   handover: image === 'build' ? 'onsite' : 'ship',
   attributes: {
-    title: `[Demo] ${title}`, brand, img: `/img/${image}.jpg`, newPrice, condition,
+    title: `[Demo] ${title}`, brand, newPrice, condition,
     ageMonths, specs, invoice: false, box: false, warranty: 'Sample data; no warranty claim',
     description: 'Sample listing for TrueDeal UI testing. This item is not offered for sale. Prices and specifications are illustrative; no ownership, inspection or seller verification is claimed.',
     sampleSeed,
@@ -40,23 +41,31 @@ export const sampleListings = products.map(([image, seller, category, title, bra
 
 // Uses a transaction so partial catalogue writes are never published. Auth
 // accounts are created separately via the supported Supabase Admin API.
-export async function insertSampleListings(db, userIds) {
+export async function insertSampleListings(db, userIds, media) {
   await db.query('begin');
   try {
     for (const listing of sampleListings) {
       const seller = sampleUsers.find(user => user.key === listing.seller);
       const sellerId = userIds[listing.seller];
       if (!sellerId) throw new Error(`Missing sample seller: ${listing.seller}`);
+      const photo = media?.[listing.id];
+      if (!photo || !photo.path.startsWith(sellerId + '/') || !/^https?:\/\//.test(photo.url) || !photo.url.endsWith('/storage/v1/object/public/listing-photos/' + photo.path)) throw new Error('Publish the seller-owned photo before creating a listing.');
       const owner = await db.query("select id from auth.users where id=$1 and email=$2 and raw_app_meta_data->>'sampleSeed'=$3 and email_confirmed_at is not null", [sellerId, seller.email, sampleSeed]);
       if (!owner.rows.length) throw new Error(`Sample seller is not a confirmed, seed-owned Auth account: ${listing.seller}`);
       const existing = await db.query('select seller_id,attributes from public.listings where id=$1', [listing.id]);
       if (existing.rows.length) {
         if (existing.rows[0].seller_id !== sellerId || existing.rows[0].attributes.sampleSeed !== sampleSeed) throw new Error('Sample listing ID belongs to unrelated data.');
+        const previousImage = existing.rows[0].attributes.img;
+        // Migrate only the known old fixture path. Preserve user-selected media
+        // and all other fields, prices and lifecycle transitions on reruns.
+        if (!previousImage || previousImage === `/img/${listing.sourceImage}`) {
+          await db.query("update public.listings set attributes=jsonb_set(attributes,'{img}',to_jsonb($2::text)) where id=$1", [listing.id, photo.url]);
+        }
         continue; // Preserve edits and any later lifecycle transitions.
       }
       await db.query(`insert into public.listings(id,seller_id,category,price_paise,status,mode,handover,serial,attributes)
         values($1,$2,$3,$4,'live','order',$5,$6,$7::jsonb)`,
-      [listing.id, sellerId, listing.category, listing.pricePaise, listing.handover, listing.serial, JSON.stringify({ ...listing.attributes, city: seller.city })]);
+      [listing.id, sellerId, listing.category, listing.pricePaise, listing.handover, listing.serial, JSON.stringify({ ...listing.attributes, city: seller.city, img: photo.url })]);
     }
     await db.query('commit');
   } catch (error) {

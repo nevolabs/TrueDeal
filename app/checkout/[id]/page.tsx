@@ -54,8 +54,8 @@ function CheckoutForm({ id }: { id: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  if (notFound) return <div className="mx-auto max-w-lg px-4 py-16 text-center text-neutral-500">That item is no longer available.</div>;
-  if (!listing || !seller) return <div className="mx-auto max-w-lg px-4 py-16 text-center text-neutral-400">Loading…</div>;
+  if (notFound) return <div className="mx-auto max-w-lg px-4 py-16 text-center text-muted-foreground">That item is no longer available.</div>;
+  if (!listing || !seller) return <div className="mx-auto max-w-lg px-4 py-16 text-center text-muted-foreground">Loading…</div>;
 
   const ship = shipFor(listing.category);
   const vault = listing.mode === 'hub' && !!listing.report;
@@ -93,25 +93,25 @@ function CheckoutForm({ id }: { id: string }) {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">
-      <nav className="mb-4 text-sm text-neutral-500">
+      <nav className="mb-4 text-sm text-muted-foreground">
         <Link href={`/item/${listing.id}`} className="hover:underline">Back to the listing</Link>
       </nav>
-      <h1 className="mb-6 text-2xl font-semibold">Checkout</h1>
+      <h1 className="mb-6 page-title">Checkout</h1>
       <form onSubmit={submit} className="grid gap-6 md:grid-cols-[1fr_340px]">
         <div className="flex flex-col gap-6">
-          <section className="rounded-xl border border-neutral-200 p-5">
+          <section className="rounded-xl border border-line p-5">
             <h2 className="mb-3 text-sm font-semibold">Deliver to</h2>
             <div className="grid gap-3 sm:grid-cols-2">
-              <label className="text-sm">Full name<input className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2" value={name} onChange={(e) => setName(e.target.value)} /></label>
-              <label className="text-sm">Mobile number<input className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2" placeholder="10-digit mobile" value={phone} onChange={(e) => setPhone(e.target.value)} /></label>
-              <label className="text-sm sm:col-span-2">Address<input placeholder="Flat, building, street" className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2" value={line} onChange={(e) => setLine(e.target.value)} /></label>
-              <label className="text-sm">City<input className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2" value={city} onChange={(e) => setCity(e.target.value)} /></label>
-              <label className="text-sm">PIN code<input maxLength={6} className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2" value={pin} onChange={(e) => setPin(e.target.value)} /></label>
+              <label className="text-sm">Full name<input className="mt-1 w-full" value={name} onChange={(e) => setName(e.target.value)} /></label>
+              <label className="text-sm">Mobile number<input className="mt-1 w-full" placeholder="10-digit mobile" value={phone} onChange={(e) => setPhone(e.target.value)} /></label>
+              <label className="text-sm sm:col-span-2">Address<input placeholder="Flat, building, street" className="mt-1 w-full" value={line} onChange={(e) => setLine(e.target.value)} /></label>
+              <label className="text-sm">City<input className="mt-1 w-full" value={city} onChange={(e) => setCity(e.target.value)} /></label>
+              <label className="text-sm">PIN code<input maxLength={6} className="mt-1 w-full" value={pin} onChange={(e) => setPin(e.target.value)} /></label>
             </div>
-            <p className="mt-2 text-xs text-neutral-500">The courier will ask for a one-time code at the door. Someone must be there to receive it.</p>
+            <p className="mt-2 text-xs text-muted-foreground">The courier will ask for a one-time code at the door. Someone must be there to receive it.</p>
           </section>
 
-          <section className="rounded-xl border border-neutral-200 p-5">
+          <section className="rounded-xl border border-line p-5">
             <h2 className="mb-3 text-sm font-semibold">How should we check it?</h2>
             {vault ? (
               <div className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">
@@ -119,56 +119,56 @@ function CheckoutForm({ id }: { id: string }) {
               </div>
             ) : (
               <div className="flex flex-col gap-2">
-                <label className="flex items-start gap-2 rounded-lg border border-neutral-200 p-3 text-sm">
+                <label className="flex items-start gap-2 rounded-lg border border-line p-3 text-sm">
                   <input type="radio" className="mt-1" checked={tier === 'basic'} onChange={() => setTier('basic')} />
-                  <span><strong>{TIERS.basic.label}</strong> — Included<br /><span className="text-neutral-500">{TIERS.basic.note}</span></span>
+                  <span><strong>{TIERS.basic.label}</strong> — Included<br /><span className="text-muted-foreground">{TIERS.basic.note}</span></span>
                 </label>
-                <label className="flex items-start gap-2 rounded-lg border border-neutral-200 p-3 text-sm">
+                <label className="flex items-start gap-2 rounded-lg border border-line p-3 text-sm">
                   <input type="radio" className="mt-1" checked={tier === 'full'} onChange={() => setTier('full')} />
-                  <span><strong>{TIERS.full.label}</strong> — +{inr(bench)}<br /><span className="text-neutral-500">{TIERS.full.note}</span></span>
+                  <span><strong>{TIERS.full.label}</strong> — +{inr(bench)}<br /><span className="text-muted-foreground">{TIERS.full.note}</span></span>
                 </label>
-                <p className="text-xs text-neutral-500">If the item fails either check, you are refunded in full, including the bench test fee.</p>
+                <p className="text-xs text-muted-foreground">If the item fails either check, you are refunded in full, including the bench test fee.</p>
               </div>
             )}
           </section>
 
-          <section className="rounded-xl border border-neutral-200 p-5">
+          <section className="rounded-xl border border-line p-5">
             <h2 className="mb-3 text-sm font-semibold">Secure payment</h2>
             <div className="flex flex-col gap-2">
               {['UPI', 'Net banking', 'Card'].map((p) => (
-                <label key={p} className="flex items-center gap-2 rounded-lg border border-neutral-200 p-3 text-sm">
+                <label key={p} className="flex items-center gap-2 rounded-lg border border-line p-3 text-sm">
                   <input type="radio" checked={pay === p} onChange={() => setPay(p)} /> {p}
                 </label>
               ))}
             </div>
-            <div className="mt-3 rounded-lg bg-neutral-50 p-3 text-xs text-neutral-600">
+            <div className="mt-3 rounded-lg bg-tint p-3 text-xs text-muted-foreground">
               🔒 Your payment is held by our payment partner and released to the seller only after the item passes
               inspection, is delivered, and your 48-hour window has closed.
             </div>
           </section>
         </div>
 
-        <aside className="h-fit rounded-xl border border-neutral-200 p-5">
+        <aside className="h-fit rounded-xl border border-line p-5">
           <div className="mb-3 flex gap-3">
-            <div className="relative h-14 w-20 shrink-0 overflow-hidden rounded-md bg-neutral-100">
+            <div className="relative h-14 w-20 shrink-0 overflow-hidden rounded-md bg-tint">
               {listing.img && <Image src={listing.img} alt={listing.title} fill className="object-cover" />}
             </div>
             <div className="text-sm">
               <strong>{listing.title}</strong>
-              <div className="text-neutral-500">{CONDITIONS[listing.condition].label} · sold by {firstName(seller.name)}</div>
+              <div className="text-muted-foreground">{CONDITIONS[listing.condition].label} · sold by {firstName(seller.name)}</div>
             </div>
           </div>
           <dl className="space-y-1 text-sm">
             <div className="flex justify-between"><dt>Item</dt><dd>{inr(listing.price)}</dd></div>
             <div className="flex justify-between"><dt>Insured shipping</dt><dd>{inr(ship)}</dd></div>
             <div className="flex justify-between"><dt>Inspection</dt><dd>{vault ? 'Full bench test, done' : tier === 'full' ? 'Full bench test, +' + inr(bench) : 'Look and feel, included'}</dd></div>
-            <div className="flex justify-between border-t border-neutral-200 pt-1 font-medium"><dt>Total</dt><dd>{inr(total)}</dd></div>
+            <div className="flex justify-between border-t border-line pt-1 font-medium"><dt>Total</dt><dd>{inr(total)}</dd></div>
           </dl>
           {error && <div className="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
-          <button disabled={paying || !paymentConfig?.enabled} className="mt-4 w-full rounded-full bg-neutral-900 py-2.5 text-sm font-medium text-white disabled:opacity-50">
+          <button disabled={paying || !paymentConfig?.enabled} className="mt-4 w-full btn">
             {paying ? 'Opening secure checkout…' : !paymentConfig?.enabled ? 'Payments not available yet' : `Pay ${inr(total)}`}
           </button>
-          <p className="mt-2 text-center text-xs text-neutral-500">{!paymentConfig?.enabled?'Checkout opens once our payment service is activated.':paymentConfig.testMode?'Test mode: no real money is collected.':'Payment processed securely by Razorpay.'}</p>
+          <p className="mt-2 text-center text-xs text-muted-foreground">{!paymentConfig?.enabled?'Checkout opens once our payment service is activated.':paymentConfig.testMode?'Test mode: no real money is collected.':'Payment processed securely by Razorpay.'}</p>
           {reservedOrder && <Link className="mt-3 block text-center text-sm underline" href={`/order/${reservedOrder}`}>View payment status</Link>}
         </aside>
       </form>

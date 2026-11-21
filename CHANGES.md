@@ -6,6 +6,107 @@ to replay `git log`.
 
 ---
 
+## 2026-11-21 — Seller setup and multiple listing photos
+
+- Payout calculator stores editable text so clearing it does not force a zero.
+- Replaced seller review blocking with basic individual PAN, IFSC, account-number,
+  confirmation and account-holder-name checks in the UI, API and PostgreSQL RPC.
+  Only PAN/account last four characters and IFSC are retained. Basic completion
+  grants listing access, never an ID-verified badge or payout activation. Existing
+  pending sellers can complete the form immediately; the operator seller queue
+  has been removed. Listing moderation remains in place.
+- Listings require 1–8 JPEG/PNG/WebP images, with previews/removal, sequential
+  Storage uploads and reuse of successful uploads on retry. PostgreSQL validates
+  existence, seller ownership, count and uniqueness atomically. Public image URLs
+  derive from ordered listing_media paths; item pages show a selectable gallery.
+- Migration 202611210001_seller_details_and_gallery.sql was applied to hosted
+  Supabase. Added SQL validation/ownership tests and a browser seller-flow test
+  with mocked network boundaries, separate from hosted integration checks.
+- Hosted verification used a demo account for basic checks, two real Storage
+  uploads, listing creation and gallery navigation. Temporary listing/photos were
+  removed and previous seller details restored after the check.
+
+## 2026-11-21 — Browser-verified homepage layout repair
+
+- Playwright reproduced the stacked facts/providers: live HTML had the new
+  classes, while the dev stylesheet still served old hero rules and omitted
+  the provider grid. Replaced the custom Turbopack CSS loader with the installed
+  Next.js guide's Tailwind PostCSS integration. Verified CSS edits and restoration
+  reach an open browser through HMR without restarting it.
+- Removed the dark-header logo's brightness/invert filter. The original blue
+  and black artwork now sits on a light backing instead of being recolored.
+- Added `npm run test:browser` with Chromium checks at 1905, 1024 and 375px for
+  grid geometry, button spacing, original branding, loaded images, horizontal
+  overflow, mobile menu keyboard dismissal and sell calculator behavior.
+  Full-page screenshots are saved under ignored `test-results/`. An existing
+  production server can be checked with `PLAYWRIGHT_BASE_URL`.
+- Verification: 29 application tests, six browser checks against development
+  and again against `next start`, production build, TypeScript and ESLint passed.
+
+## 2026-11-20 — Match the supplied homepage screenshots
+
+- Corrected the first UI pass's structural mismatch: dark 64px desktop header,
+  primary links left/account links right, visible desktop sign-out, the reference
+  three-line hero headline, full-height larger artwork and dark integrated facts.
+- Restored the reference's eight-logo grid and its 260px/remaining-width layout.
+  Assets use content-addressed Storage paths; labels explicitly identify planned
+  integrations rather than claiming active payment/provider partnerships.
+- Added an additive migration allowing trusted deployment-managed SVG branding
+  in site-assets only. Listing photos and private evidence formats/policies remain
+  unchanged. Brand publishing now includes the provider logo manifest.
+## 2026-11-20 — Reference-aligned UI typography and controls
+
+- Matched the supplied sell.io reference's Public Sans/Schibsted Grotesk/IBM
+  Plex Mono font roles, neutral palette, hairlines, type hierarchy and spacing.
+  Replaced inconsistent pill actions with shared 40/48px button sizes, readable
+  forms and 44px minimum mobile actions across marketplace/account/order views.
+- Refreshed home, browse, cards, navigation, footer and authentication layouts.
+  Mobile navigation/account disclosures have expanded state, dismissal and focus
+  return; mobile filters remain available without crowding the listing grid.
+  Added async search race protection, form labels/autocomplete/busy messages,
+  a skip link and narrow-screen price wrapping.
+- Corrected misleading always-verified seller badges using a server-derived
+  verification boolean. Item checkout respects the existing payment flag;
+  home copy no longer asserts active payment partnerships. No money state changed.
+- Added automated contrast checks and completed an independent source UX review.
+  Interactive browser/device checks are unavailable in this environment and
+  are not represented as completed visual or accessibility verification.
+## 2026-11-20 — Storage-backed catalogue and branding images
+
+- Added/applied migration 5 for seller-owned existing Storage photos, canonical
+  `listing_media` references, and a deployment-managed `site-assets` bucket.
+  The read API derives URLs from the configured project and ignores legacy
+  image URL attributes. Private evidence remains private and signed.
+- Moved catalogue import files and branding sources outside `public`. Import
+  scripts upload immutable content-addressed objects before database writes,
+  verify duplicates and migrate only known old fixture paths without resetting
+  listing edits. Navbar branding uses a public object-path environment setting;
+  homepage images come from actual listings. Next.js restricts remote images to
+  project-owned paths with no query strings or redirects.
+- Added migration-backed coverage for ownership, missing files, backfills and
+  repeatable imports, plus object-path and deployment URL validation tests.
+- Uploaded all 14 catalogue photos and the navbar logo to hosted Storage.
+  Verified public downloads, Next.js optimization, safe import reruns and zero
+  remaining local product paths. Hosted history is up to date; payments stay off.
+
+## 2026-11-20 — Email/password authentication without confirmation
+
+- Set local Supabase email confirmation to false at the owner's request.
+  Standard Auth signup already accepts an immediate JWT session when hosted
+  Confirm email is off; no admin signup endpoint or password bypass was added.
+- Updated sign-in/signup wording and setup documents for the immediate-signup
+  flow. Password recovery remains email-based; existing accounts are not changed.
+- After the owner disabled hosted Confirm email, verified Auth settings and a
+  new signup through the app: immediate cookie session, sign-out and password
+  sign-in all succeeded. Removed the temporary test account and profile.
+
+## 2026-11-20 — Use the supplied TrueDeal shield logo
+
+- Added the owner's transparent logo as the responsive navbar home link, using
+  Next.js Image with an accessible name and fixed proportions.
+- Replaced the default Next.js favicon with an SVG viewport of the shield from
+  the same unchanged PNG, keeping the mark readable in the browser tab.
+
 ## 2026-11-20 — Sample catalogue activated on the hosted project
 
 - Ran the owner-authorized sample setup using the server key stored only in

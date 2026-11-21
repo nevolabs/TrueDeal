@@ -5,6 +5,7 @@ import nextEnv from '@next/env';
 import { createClient } from '@supabase/supabase-js';
 import pg from 'pg';
 import { sampleUsers, sampleListings, sampleSeed, insertSampleListings } from './sample-catalog.mjs';
+import { imageObjectPath, publishImage } from './media-storage.mjs';
 
 nextEnv.loadEnvConfig(process.cwd(), false, { info() {}, error() {} });
 const project = 'fgcgmycoyxrkznskgkpa';
@@ -14,7 +15,7 @@ const credentialsFile = fileURLToPath(new URL('../.demo-accounts.json', import.m
 
 async function run() {
   if (process.env.PAYMENTS_ENABLED === 'true') throw new Error('Disable payments before setting up the sample catalogue.');
-  for (const listing of sampleListings) await access(new URL(`../public${listing.attributes.img}`, import.meta.url));
+  for (const listing of sampleListings) await access(new URL(`./fixtures/catalog/${listing.sourceImage}`, import.meta.url));
   console.log(JSON.stringify({ project, accounts: sampleUsers.map(({ key, name, city, email }) => ({ key, name, city, email })),
     listings: sampleListings.length, pricesInRupees: sampleListings.map(listing => ({ title: listing.attributes.title, price: listing.pricePaise / 100 })),
     mode: apply ? 'apply' : 'preview', payments: 'disabled; no payout accounts or financial records are created' }, null, 2));
@@ -30,7 +31,8 @@ async function run() {
   const db = new pg.Client({ host, user, password: process.env.SUPABASE_DB_PASSWORD, database: 'postgres', port: 5432,
     ssl: { ca: await readFile(new URL('../supabase/certs/supabase-root-2021.crt', import.meta.url), 'utf8'), rejectUnauthorized: true },
     connectionTimeoutMillis: 10000, query_timeout: 15000 });
-  const admin = createClient(expectedUrl, secret, { auth: { persistSession: false, autoRefreshToken: false } });
+  const admin = createClient(expectedUrl, secret, { auth: { persistSession: false, autoRefreshToken: false },
+    global: { fetch: (url, init) => fetch(url, { ...init, signal: AbortSignal.timeout(30000) }) } });
   try {
     await db.connect();
     // Refuse to change credentials or create users until the schema is available.
@@ -67,7 +69,13 @@ async function run() {
       if (error || !data.user) throw new Error(`Could not create sample account ${sample.key} (${error?.code || error?.status || 'unknown'}). Rerun after resolving the error; existing sample accounts are reused.`);
       userIds[sample.key] = data.user.id;
     }
-    await insertSampleListings(db, userIds);
+    const media = {};
+    for (const listing of sampleListings) {
+      const bytes = await readFile(new URL(`./fixtures/catalog/${listing.sourceImage}`, import.meta.url));
+      const path = imageObjectPath(userIds[listing.seller], bytes, 'jpg');
+      media[listing.id] = await publishImage(admin, 'listing-photos', path, bytes, 'image/jpeg');
+    }
+    await insertSampleListings(db, userIds, media);
     const result = await db.query("select count(*)::int as listings from public.listings where attributes->>'sampleSeed'=$1", [sampleSeed]);
     console.log(`Ready: ${sampleUsers.length} sample Auth accounts and ${result.rows[0].listings} listings. Login credentials, when created by this machine, are in ignored .demo-accounts.json.`);
   } finally { await db.end(); }

@@ -57,11 +57,11 @@ function Timeline({ order }: { order: Order }) {
             <div className="text-sm">
               <strong>{order.handover === 'onsite' && s.onsite ? s.onsite : s.title}</strong>
               {at[s.key] ? (
-                <div className="text-xs text-neutral-500">{new Date(at[s.key]).toLocaleString('en-IN')}</div>
+                <div className="text-xs text-muted-foreground">{new Date(at[s.key]).toLocaleString('en-IN')}</div>
               ) : order.fromStock && i > 0 && i < 3 ? (
-                <div className="text-xs text-neutral-500">Done before listing</div>
+                <div className="text-xs text-muted-foreground">Done before listing</div>
               ) : null}
-              {notes[s.key] && <p className="mt-1 text-neutral-600">{notes[s.key]}</p>}
+              {notes[s.key] && <p className="mt-1 text-muted-foreground">{notes[s.key]}</p>}
             </div>
           </li>
         );
@@ -71,8 +71,8 @@ function Timeline({ order }: { order: Order }) {
           <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-red-600 text-xs" />
           <div className="text-sm">
             <strong>Status update</strong>
-            <div className="text-xs text-neutral-500">{new Date(order.timeline[order.timeline.length - 1].at).toLocaleString('en-IN')}</div>
-            {order.timeline[order.timeline.length - 1].note && <p className="mt-1 text-neutral-600">{order.timeline[order.timeline.length - 1].note}</p>}
+            <div className="text-xs text-muted-foreground">{new Date(order.timeline[order.timeline.length - 1].at).toLocaleString('en-IN')}</div>
+            {order.timeline[order.timeline.length - 1].note && <p className="mt-1 text-muted-foreground">{order.timeline[order.timeline.length - 1].note}</p>}
           </div>
         </li>
       )}
@@ -82,9 +82,9 @@ function Timeline({ order }: { order: Order }) {
 
 function Box({ title, body, children }: { title: string; body: string; children?: React.ReactNode }) {
   return (
-    <div className="rounded-xl border border-neutral-200 p-5">
+    <div className="rounded-xl border border-line p-5">
       <h2 className="mb-1 font-semibold">{title}</h2>
-      <p className="text-sm text-neutral-600">{body}</p>
+      <p className="text-sm text-muted-foreground">{body}</p>
       {children && <div className="mt-3 flex flex-col gap-2">{children}</div>}
     </div>
   );
@@ -119,25 +119,25 @@ function InspectForm({ data, onDone }: { data: OrderData; onDone: () => void }) 
   }
 
   return (
-    <div className="rounded-xl border border-neutral-200 p-5">
+    <div className="rounded-xl border border-line p-5">
       <div className="mb-3 flex items-center justify-between">
         <div>
           <h2 className="font-semibold">{data.listing.title}</h2>
-          <p className="text-sm text-neutral-500">{(TIERS[data.order.tier] || TIERS.full).label}, chosen by the buyer</p>
+          <p className="text-sm text-muted-foreground">{(TIERS[data.order.tier] || TIERS.full).label}, chosen by the buyer</p>
         </div>
         <button
           type="button"
           onClick={() => setResults(Object.fromEntries(checks.map((_, i) => [i, 'pass'])))}
-          className="text-sm underline"
+          className="btn btn-sm btn-secondary"
         >
           Mark all as pass
         </button>
       </div>
-      <div className="mb-4 grid grid-cols-2 gap-3 rounded-lg bg-neutral-50 p-3 text-sm sm:grid-cols-4">
-        <div><span className="block text-xs text-neutral-500">Listed serial</span><strong className="font-mono">{data.listing.serial}</strong></div>
-        <div><span className="block text-xs text-neutral-500">Listed condition</span><strong>{CONDITIONS[data.listing.condition].label}</strong></div>
-        <div><span className="block text-xs text-neutral-500">Warranty claimed</span><strong>{data.listing.warranty}</strong></div>
-        <div><span className="block text-xs text-neutral-500">Invoice / box</span><strong>{data.listing.invoice ? 'Yes' : 'No'} / {data.listing.box ? 'Yes' : 'No'}</strong></div>
+      <div className="mb-4 grid grid-cols-2 gap-3 rounded-lg bg-tint p-3 text-sm sm:grid-cols-4">
+        <div><span className="block text-xs text-muted-foreground">Listed serial</span><strong className="font-mono">{data.listing.serial}</strong></div>
+        <div><span className="block text-xs text-muted-foreground">Listed condition</span><strong>{CONDITIONS[data.listing.condition].label}</strong></div>
+        <div><span className="block text-xs text-muted-foreground">Warranty claimed</span><strong>{data.listing.warranty}</strong></div>
+        <div><span className="block text-xs text-muted-foreground">Invoice / box</span><strong>{data.listing.invoice ? 'Yes' : 'No'} / {data.listing.box ? 'Yes' : 'No'}</strong></div>
       </div>
       <ul className="mb-4 divide-y divide-neutral-100">
         {checks.map((c, i) => (
@@ -156,11 +156,11 @@ function InspectForm({ data, onDone }: { data: OrderData; onDone: () => void }) 
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="text-sm">
           Serial read from the unit
-          <input className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 font-mono" placeholder="Type it, do not paste from the listing" value={serial} onChange={(e) => setSerial(e.target.value)} />
+          <input className="mt-1 w-full font-mono" placeholder="Type it, do not paste from the listing" value={serial} onChange={(e) => setSerial(e.target.value)} />
         </label>
         <label className="text-sm">
           Grade you would give it
-          <select className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2" value={grade} onChange={(e) => setGrade(e.target.value)}>
+          <select className="mt-1 w-full" value={grade} onChange={(e) => setGrade(e.target.value)}>
             {Object.keys(CONDITIONS).map((k) => (
               <option key={k} value={k}>{CONDITIONS[k].label}</option>
             ))}
@@ -168,15 +168,15 @@ function InspectForm({ data, onDone }: { data: OrderData; onDone: () => void }) 
         </label>
         <label className="text-sm sm:col-span-2">
           Notes for the buyer
-          <textarea rows={3} className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2" placeholder="Temperatures under load, battery health, any marks or wear you found" value={notes} onChange={(e) => setNotes(e.target.value)} />
+          <textarea rows={3} className="mt-1 w-full" placeholder="Temperatures under load, battery health, any marks or wear you found" value={notes} onChange={(e) => setNotes(e.target.value)} />
         </label>
       </div>
       {error && <div className="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
       <div className="mt-4 flex gap-3">
-        <button disabled={busy} onClick={() => submit('pass')} className="rounded-full bg-neutral-900 px-5 py-2.5 text-sm font-medium text-white disabled:opacity-50">
+        <button disabled={busy} onClick={() => submit('pass')} className="btn">
           Pass and issue report
         </button>
-        <button disabled={busy} onClick={() => submit('fail')} className="rounded-full bg-red-600 px-5 py-2.5 text-sm font-medium text-white disabled:opacity-50">
+        <button disabled={busy} onClick={() => submit('fail')} className="btn btn-danger">
           Fail and refund buyer
         </button>
       </div>
@@ -207,15 +207,15 @@ function DisputeForm({ id, onDone }: { id: string; onDone: () => void }) {
       <summary className="cursor-pointer underline">Something is wrong</summary>
       <form onSubmit={submit} className="mt-3 flex flex-col gap-2">
         <label>What happened?
-          <select className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2" value={reason} onChange={(e) => setReason(e.target.value)}>
+          <select className="mt-1 w-full" value={reason} onChange={(e) => setReason(e.target.value)}>
             {DISPUTE_REASONS.map((r) => <option key={r}>{r}</option>)}
           </select>
         </label>
         <label>Details
-          <textarea rows={3} className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2" placeholder="What you found, and when." value={detail} onChange={(e) => setDetail(e.target.value)} />
+          <textarea rows={3} className="mt-1 w-full" placeholder="What you found, and when." value={detail} onChange={(e) => setDetail(e.target.value)} />
         </label>
         {error && <div className="rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">{error}</div>}
-        <button className="rounded-full bg-neutral-900 py-2 text-sm font-medium text-white">Freeze payout and open a claim</button>
+        <button className="btn">Freeze payout and open a claim</button>
       </form>
     </details>
   );
@@ -233,20 +233,20 @@ function DispatchForm({ id, onDone }: { id: string; onDone: () => void }) {
   return (
     <form onSubmit={submit} className="flex flex-col gap-2">
       <label className="text-sm">Courier
-        <select className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2" value={courier} onChange={(e) => setCourier(e.target.value)}>
+        <select className="mt-1 w-full" value={courier} onChange={(e) => setCourier(e.target.value)}>
           {COURIERS.map((c) => <option key={c}>{c}</option>)}
         </select>
       </label>
-      <label className="text-sm">Tracking number<input required minLength={3} className="mt-1 w-full rounded-md border px-3 py-2" value={awb} onChange={e=>setAwb(e.target.value)}/></label>
+      <label className="text-sm">Tracking number<input required minLength={3} className="mt-1 w-full" value={awb} onChange={e=>setAwb(e.target.value)}/></label>
       {error&&<p role="alert" className="text-sm text-red-700">{error}</p>}
-      <button className="rounded-full bg-neutral-900 py-2 text-sm font-medium text-white">Mark dispatched</button>
+      <button className="btn">Mark dispatched</button>
     </form>
   );
 }
 
 function ActionButton({ label, onClick, danger }: { label: string; onClick: () => void; danger?: boolean }) {
   return (
-    <button onClick={onClick} className={`rounded-full px-4 py-2 text-sm font-medium text-white ${danger ? 'bg-red-600' : 'bg-neutral-900'}`}>
+    <button onClick={onClick} className={`btn ${danger ? 'btn-danger' : ''}`}>
       {label}
     </button>
   );
@@ -310,11 +310,11 @@ function ActionPanel({ data, reload }: { data: OrderData; reload: () => void }) 
       case 'paid':
         return (
           <Box title={'A buyer has paid. Hand it over by ' + by + '.'} body={o.handover === 'onsite' ? 'Book a time for our agent to visit. They inspect it in front of you, seal it and take it away. Ask them for the code below before you hand anything over.' : 'Pack it well and send it to the TrueDeal hub in Bengaluru. Write this code on the outside of the parcel.'}>
-            <div className="rounded-lg bg-neutral-50 p-3 text-sm"><span className="block text-xs text-neutral-500">Handover code</span><strong className="font-mono">{o.handoverCode}</strong></div>
+            <div className="rounded-lg bg-tint p-3 text-sm"><span className="block text-xs text-muted-foreground">Handover code</span><strong className="font-mono">{o.handoverCode}</strong></div>
             {o.handover !== 'onsite' ? (
-              <p className="text-xs text-neutral-500">TrueDeal Hub, 2nd Floor, 80 Feet Road, Indiranagar, Bengaluru 560038</p>
+              <p className="text-xs text-muted-foreground">TrueDeal Hub, 2nd Floor, 80 Feet Road, Indiranagar, Bengaluru 560038</p>
             ) : (
-              <p className="text-xs text-neutral-500">On-site visit: {inr(o.visitFee)}, deducted from your payout.</p>
+              <p className="text-xs text-muted-foreground">On-site visit: {inr(o.visitFee)}, deducted from your payout.</p>
             )}
             <ActionButton label={o.handover === 'onsite' ? 'Book the visit' : 'I have dispatched it'} onClick={() => run('handover', o.handover === 'onsite' ? 'Visit booked. Our agent will bring the code.' : 'Thanks. We will confirm when it reaches the hub.')} />
           </Box>
@@ -409,8 +409,8 @@ export default function OrderPage({ params }: { params: Promise<{ id: string }> 
     load();
   }, [load]);
 
-  if (error) return <div className="mx-auto max-w-3xl px-4 py-16 text-center text-neutral-500">{error}</div>;
-  if (!data || !user) return <div className="mx-auto max-w-3xl px-4 py-16 text-center text-neutral-400">Loading…</div>;
+  if (error) return <div className="mx-auto max-w-3xl px-4 py-16 text-center text-muted-foreground">{error}</div>;
+  if (!data || !user) return <div className="mx-auto max-w-3xl px-4 py-16 text-center text-muted-foreground">Loading…</div>;
 
   const { order: o, role, listing: l, buyer, seller } = data;
   const back = role === 'ops' ? ['/ops', 'Bench console'] : role === 'seller' ? ['/selling', 'Selling'] : ['/orders', 'Your orders'];
@@ -421,14 +421,14 @@ export default function OrderPage({ params }: { params: Promise<{ id: string }> 
         <div className="flex justify-between"><dt>Sale price</dt><dd>{inr(o.price)}</dd></div>
         <div className="flex justify-between"><dt>TrueDeal fee</dt><dd>− {inr(o.fee)}</dd></div>
         {!!o.visitFee && <div className="flex justify-between"><dt>On-site visit</dt><dd>− {inr(o.visitFee)}</dd></div>}
-        <div className="flex justify-between border-t border-neutral-200 pt-1 font-medium"><dt>Your payout</dt><dd>{inr(o.payout)}</dd></div>
+        <div className="flex justify-between border-t border-line pt-1 font-medium"><dt>Your payout</dt><dd>{inr(o.payout)}</dd></div>
       </dl>
     ) : (
       <dl className="space-y-1 text-sm">
         <div className="flex justify-between"><dt>Item</dt><dd>{inr(o.price)}</dd></div>
         <div className="flex justify-between"><dt>Insured shipping</dt><dd>{inr(o.shipping)}</dd></div>
         {!!o.inspectionFee && <div className="flex justify-between"><dt>Full bench test</dt><dd>{inr(o.inspectionFee)}</dd></div>}
-        <div className="flex justify-between border-t border-neutral-200 pt-1 font-medium"><dt>Order total</dt><dd>{inr(o.total)}</dd></div>
+        <div className="flex justify-between border-t border-line pt-1 font-medium"><dt>Order total</dt><dd>{inr(o.total)}</dd></div>
         {role === 'ops' && (
           <>
             <div className="flex justify-between"><dt>Seller payout</dt><dd>{inr(o.payout)}</dd></div>
@@ -454,29 +454,29 @@ export default function OrderPage({ params }: { params: Promise<{ id: string }> 
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">
-      <nav className="mb-4 text-sm text-neutral-500">
+      <nav className="mb-4 text-sm text-muted-foreground">
         <Link href={back[0]} className="hover:underline">{back[1]}</Link>
       </nav>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">Order <span className="font-mono">{o.id}</span></h1>
-          <p className="mt-1 text-sm text-neutral-500">Placed {new Date(o.createdAt).toLocaleString('en-IN')}</p>
+          <h1 className="page-title">Order <span className="break-all font-mono text-base md:text-xl">{o.id}</span></h1>
+          <p className="mt-1 text-sm text-muted-foreground">Placed {new Date(o.createdAt).toLocaleString('en-IN')}</p>
         </div>
         <StatusBadge status={o.status} />
       </div>
       <div className="grid gap-6 md:grid-cols-[1fr_320px]">
         <div className="flex flex-col gap-6">
           {role === 'ops' && o.status === 'at_hub' && <InspectForm data={data} onDone={load} />}
-          <div className="rounded-xl border border-neutral-200 p-5">
+          <div className="rounded-xl border border-line p-5">
             <h2 className="mb-3 font-semibold">Progress</h2>
             <Timeline order={o} />
           </div>
           {o.dispute && (
-            <div className="rounded-xl border border-neutral-200 p-5">
+            <div className="rounded-xl border border-line p-5">
               <h2 className="mb-1 font-semibold">Buyer&apos;s claim</h2>
               <p className="font-medium">{o.dispute.reason}</p>
-              <p className="mt-1 text-sm text-neutral-600">{o.dispute.detail}</p>
-              <p className="mt-1 text-xs text-neutral-400">Raised {new Date(o.dispute.at).toLocaleString('en-IN')}</p>
+              <p className="mt-1 text-sm text-muted-foreground">{o.dispute.detail}</p>
+              <p className="mt-1 text-xs text-muted-foreground">Raised {new Date(o.dispute.at).toLocaleString('en-IN')}</p>
             </div>
           )}
           {o.report && <ReportCard report={o.report} maskSerial={role !== 'ops'} />}
@@ -484,14 +484,14 @@ export default function OrderPage({ params }: { params: Promise<{ id: string }> 
         </div>
         <aside className="flex flex-col gap-4">
           <ActionPanel data={data} reload={load} />
-          <div className="rounded-xl border border-neutral-200 p-5">
+          <div className="rounded-xl border border-line p-5">
             <Link href={`/item/${l.id}`} className="mb-3 flex gap-3">
-              <div className="relative h-14 w-20 shrink-0 overflow-hidden rounded-md bg-neutral-100">
+              <div className="relative h-14 w-20 shrink-0 overflow-hidden rounded-md bg-tint">
                 {l.img && <Image src={l.img} alt={l.title} fill className="object-cover" />}
               </div>
               <div className="text-sm">
                 <strong>{l.title}</strong>
-                <div className="text-neutral-500">{CONDITIONS[l.condition].label}</div>
+                <div className="text-muted-foreground">{CONDITIONS[l.condition].label}</div>
               </div>
             </Link>
             {money}
@@ -501,18 +501,18 @@ export default function OrderPage({ params }: { params: Promise<{ id: string }> 
             </div>
           </div>
           {role !== 'seller' && (
-            <div className="rounded-xl border border-neutral-200 p-5">
+            <div className="rounded-xl border border-line p-5">
               <h3 className="mb-2 text-sm font-semibold">Deliver to</h3>
-              <p className="text-sm text-neutral-600">
+              <p className="text-sm text-muted-foreground">
                 {o.address.name}<br />{o.address.line}<br />{o.address.city} {o.address.pin}
                 {role === 'ops' && <><br />{o.address.phone}</>}
               </p>
             </div>
           )}
           {role === 'ops' && (
-            <div className="rounded-xl border border-neutral-200 p-5">
+            <div className="rounded-xl border border-line p-5">
               <h3 className="mb-2 text-sm font-semibold">Parties</h3>
-              <p className="text-sm text-neutral-600">
+              <p className="text-sm text-muted-foreground">
                 Buyer: {buyer.name}, {buyer.city}<br />Seller: {seller.name}, {seller.city}
               </p>
             </div>

@@ -5,22 +5,24 @@ import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import ListingCard from '@/components/ListingCard';
 import ReportCard from '@/components/ReportCard';
+import ProviderGrid from '@/components/ProviderGrid';
 import { CheckIcon, ClockIcon, LockIcon, TruckIcon } from '@/components/icons';
-import { FEES, PARTNERS, benchFor, inr } from '@/lib/data';
+import { FEES, benchFor, inr } from '@/lib/data';
 import { api } from '@/lib/client';
 import type { Listing } from '@/lib/types';
 
 const STEPS = [
-  ['You pay into escrow', 'Your money is held by our payment partner. The seller can see that you have paid, but cannot withdraw it yet.'],
-  ['The seller hands it over', 'They courier it to our hub in Bengaluru within three days. If they prefer, our agent visits them to inspect and collect it.'],
-  ['We inspect it', 'Every item gets a look-and-feel check by hand. You can add a full bench test at checkout. You see the report before the item ships.'],
-  ['You check it, then the seller is paid', 'It ships sealed and insured. You have 48 hours to check it. If you raise nothing in that time, the payment is released.'],
+  ['Find your next upgrade', 'Browse by category, condition and price. Take a closer look at the photos and specifications.'],
+  ['Get the full picture', 'Review the description, included accessories and seller details before making a decision.'],
+  ['Make it yours', 'When checkout is available, the order page guides you through payment and the selected inspection service.'],
+  ['Keep everything in view', 'Track the next steps, inspection reports and delivery updates from your account.'],
 ];
 
 export default function HomePage() {
   const [listings, setListings] = useState<Listing[]>([]);
   const [total, setTotal] = useState(0);
   const [error, setError] = useState('');
+  const [paymentsAvailable, setPaymentsAvailable] = useState<boolean | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -34,112 +36,98 @@ export default function HomePage() {
     }).catch((e: unknown) => {
       if (active) setError(e instanceof Error ? e.message : 'Listings are temporarily unavailable.');
     });
+    api.get<{ enabled: boolean }>('/api/payments/config').then(data => {
+      if (active) setPaymentsAvailable(data.enabled);
+    }).catch(() => { /* Browsing remains available if checkout status cannot be loaded. */ });
     return () => { active = false; };
   }, []);
 
-  const sample = listings.find((l) => l.id === 'l_gpu');
+  const heroListing = listings.find(listing => listing.category === 'gpu' && listing.img) || listings.find(listing => listing.img);
+  const sample = listings.find(listing => listing.report);
 
   return (
     <>
-      <section className="bg-neutral-900 text-white">
-        <div className="mx-auto grid max-w-6xl gap-10 px-4 py-16 md:grid-cols-2 md:items-center">
-          <div>
-            <h1 className="text-3xl font-semibold leading-tight md:text-4xl">
-              Used PC hardware, inspected by hand before it ships.
+      <section className="home-hero">
+        <div className="site-shell home-hero-inner">
+          <div className="hero-content">
+            <h1 className="hero-title">
+              Used PC hardware,<br />inspected by hand<br />before it ships.
             </h1>
-            <p className="mt-4 text-neutral-300">
-              Your payment waits in escrow while a TrueDeal technician checks the item against its listing. The
-              seller is paid only after you have had it for 48 hours.
+            <p className="hero-copy">
+              Review the photos, condition and specifications before you commit. When checkout is available,
+              choose the inspection service that checks the item before it ships.
             </p>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <Link href="/browse" className="rounded-full bg-white px-5 py-2.5 text-sm font-medium text-neutral-900">
+            <div className="hero-actions">
+              <Link href="/browse" className="btn btn-lg btn-light">
                 Browse listings →
               </Link>
-              <Link href="/sell" className="rounded-full border border-white/40 px-5 py-2.5 text-sm font-medium">
+              <Link href="/sell" className="btn btn-lg btn-inverse">
                 Sell your hardware
               </Link>
             </div>
           </div>
-          <div className="relative aspect-[4/3] overflow-hidden rounded-2xl">
-            <Image src="/img/gpu.jpg" alt="Two graphics cards on a dark surface" fill className="object-cover" />
+          <div className="hero-art">
+            {heroListing ? <Image src={heroListing.img} alt={heroListing.title} fill sizes="(min-width: 768px) 50vw, 100vw" className="object-cover" /> :
+              <div className="flex h-full items-center justify-center text-neutral-300">Discover hardware on TrueDeal</div>}
           </div>
         </div>
-      </section>
-
-      <section className="mx-auto max-w-6xl px-4 py-8">
-        <ul className="grid grid-cols-2 gap-3 text-sm text-neutral-600 md:grid-cols-4">
+        <ul className="site-shell hero-facts">
           <li className="flex items-center gap-2">
-            <LockIcon size={16} className="shrink-0 text-neutral-400" /> Payment held in escrow
+            <LockIcon size={16} /> Secure account sign-in
           </li>
           <li className="flex items-center gap-2">
-            <CheckIcon size={16} className="shrink-0 text-neutral-400" /> Every item inspected by hand
+            <CheckIcon size={16} /> Clear condition details
           </li>
           <li className="flex items-center gap-2">
-            <TruckIcon size={16} className="shrink-0 text-neutral-400" /> Sealed and insured in transit
+            <TruckIcon size={16} /> Shipping options by item
           </li>
           <li className="flex items-center gap-2">
-            <ClockIcon size={16} className="shrink-0 text-neutral-400" /> 48 hours to check it yourself
+            <ClockIcon size={16} /> One account, buy and sell
           </li>
         </ul>
       </section>
 
-      <section className="mx-auto max-w-6xl px-4 py-8">
-        <h2 className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-400">In partnership with</h2>
-        <p className="mb-4 text-sm text-neutral-500">
-          Your money, the parcel and the seller&apos;s identity are each handled by a specialist. This is a mock
-          prototype — these are not live integrations.
-        </p>
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {(['Payments', 'Identity', 'Courier', 'Insurance'] as const).map((category) => (
-            <div key={category}>
-              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-400">{category}</h3>
-              <ul className="space-y-1 text-sm text-neutral-700">
-                {PARTNERS.filter((p) => p.category === category).map((p) => (
-                  <li key={p.name}>{p.name}</li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
-      </section>
+      <ProviderGrid />
 
-      <section className="mx-auto max-w-6xl px-4 py-8">
-        <div className="mb-4 flex items-end justify-between">
+      <section className="site-shell home-section">
+        <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h2 className="text-xl font-semibold">Recently listed</h2>
-            <p className="mt-0.5 text-sm text-neutral-500">
+            <p className="eyebrow mb-3">Something worth discovering</p>
+            <h2 className="section-title">Recently listed</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
               Showing {listings.length} of {total} live listings
             </p>
           </div>
-          <Link href="/browse" className="text-sm underline">
+          <Link href="/browse" className="btn btn-secondary">
             Browse all →
           </Link>
         </div>
         {error && <p role="alert" className="mb-4 rounded-md bg-amber-50 p-4 text-sm text-amber-900">{error}</p>}
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+        {paymentsAvailable === false && <p className="mb-6 rounded-lg border border-line bg-surface px-4 py-3 text-sm text-muted-foreground">Checkout is not available yet. You can browse the catalogue and prepare your seller account.</p>}
+        <div className="grid grid-cols-2 gap-x-5 gap-y-8 md:grid-cols-3 lg:grid-cols-4">
           {listings.map((l) => (
             <ListingCard key={l.id} listing={l} />
           ))}
         </div>
       </section>
 
-      <section className="bg-neutral-50 py-12">
-        <div className="mx-auto max-w-6xl px-4">
+      <section className="home-section border-y border-line bg-tint">
+        <div className="site-shell">
           <div className="mb-6 flex items-center justify-between">
-            <h2 className="text-xl font-semibold">How a deal works</h2>
+            <h2 className="section-title">A little clarity, at every step.</h2>
             <Link href="/how-it-works" className="text-sm underline">
               Fees and the full process
             </Link>
           </div>
-          <ol className="grid gap-6 md:grid-cols-2">
+          <ol className="grid gap-6 border-t border-line-strong pt-7 sm:grid-cols-2 lg:grid-cols-4">
             {STEPS.map((s, i) => (
-              <li key={i} className="flex gap-4">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-neutral-900 text-sm font-medium text-white">
-                  {i + 1}
+              <li key={i} className="min-w-0">
+                <span className="mb-5 block font-display text-base font-semibold text-muted-foreground">
+                  0{i + 1}
                 </span>
                 <div>
                   <h3 className="font-medium">{s[0]}</h3>
-                  <p className="text-sm text-neutral-600">{s[1]}</p>
+                  <p className="text-sm text-muted-foreground">{s[1]}</p>
                 </div>
               </li>
             ))}
@@ -148,14 +136,14 @@ export default function HomePage() {
       </section>
 
       {sample?.report && (
-        <section className="mx-auto grid max-w-6xl gap-8 px-4 py-12 md:grid-cols-2 md:items-center">
+        <section className="grid gap-8 home-section md:grid-cols-2 md:items-center site-shell">
           <div>
-            <h2 className="text-xl font-semibold">Every order comes with an inspection report</h2>
-            <p className="mt-3 text-sm text-neutral-600">
-              This is the report for the RTX 2080 Ti listed above. The technician records the serial number, the
+            <h2 className="section-title">The details, documented.</h2>
+            <p className="mt-3 text-sm text-muted-foreground">
+              This is the report for {sample.title}. The technician records the serial number, the
               result of each check and anything they noticed, including scratches and wear.
             </p>
-            <p className="mt-2 text-sm text-neutral-600">
+            <p className="mt-2 text-sm text-muted-foreground">
               You see the report before the item ships. If the item does not match its listing, the order is
               cancelled and you get all your money back.
             </p>
@@ -167,50 +155,49 @@ export default function HomePage() {
         </section>
       )}
 
-      <section className="bg-neutral-900 py-12 text-white">
-        <div className="mx-auto max-w-6xl px-4">
-          <h2 className="text-xl font-semibold">What it costs</h2>
-          <p className="mt-1 text-sm text-neutral-400">
-            No subscription and no listing fee. Sellers pay only when something sells.
+      <section className="home-section bg-night text-white">
+        <div className="site-shell">
+          <h2 className="section-title">Clear pricing, before you commit.</h2>
+          <p className="mt-1 text-sm text-white/70">
+            No subscription and no listing fee. These fees apply when checkout is available.
           </p>
           <dl className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             <div>
               <dt className="font-medium">Buyers</dt>
-              <dd className="text-sm text-neutral-400">
+              <dd className="text-sm text-white/70">
                 Listed price and insured shipping, with a look-and-feel check included.
               </dd>
             </div>
             <div>
               <dt className="font-medium">Full bench test</dt>
-              <dd className="text-sm text-neutral-400">
+              <dd className="text-sm text-white/70">
                 Optional, chosen at checkout. From {inr(benchFor('mouse'))} for a mouse to {inr(benchFor('desktop'))} for a
                 desktop build.
               </dd>
             </div>
             <div>
               <dt className="font-medium">Sellers</dt>
-              <dd className="text-sm text-neutral-400">
+              <dd className="text-sm text-white/70">
                 {FEES.commissionRate * 100}% of the sale price (minimum {inr(FEES.commissionMin)}), charged only when
                 the deal completes.
               </dd>
             </div>
             <div>
               <dt className="font-medium">If it fails inspection</dt>
-              <dd className="text-sm text-neutral-400">The buyer is refunded in full. The item goes back to the seller.</dd>
+              <dd className="text-sm text-white/70">The buyer is refunded in full. The item goes back to the seller.</dd>
             </div>
           </dl>
         </div>
       </section>
 
-      <section className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-6 px-4 py-12 md:flex-row md:items-center">
+      <section className="flex flex-col items-start justify-between gap-6 home-section md:flex-row md:items-center site-shell">
         <div>
-          <h2 className="text-xl font-semibold">Selling a graphics card, laptop or camera?</h2>
-          <p className="mt-2 text-sm text-neutral-600">
-            The buyer pays into escrow before you hand anything over, and you are paid once they have had the item
-            for 48 hours.
+          <h2 className="section-title">Make room for your next upgrade.</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Start with your seller profile. Add clear photos, an honest description and a price that works for you.
           </p>
         </div>
-        <Link href="/sell" className="whitespace-nowrap rounded-full bg-neutral-900 px-6 py-3 text-sm font-medium text-white">
+        <Link href="/sell" className="btn btn-lg">
           Start selling →
         </Link>
       </section>

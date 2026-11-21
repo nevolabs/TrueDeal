@@ -1,5 +1,29 @@
 # UX / design audit — fix list
 
+## 2026-11-21 browser verification
+
+Playwright Chromium reproduced missing live layout rules despite correct source
+CSS. Switching from the custom Turbopack loader to Tailwind PostCSS restored the
+four-column feature row, 4×2 provider grid and spaced hero buttons. A temporary
+CSS custom-property edit and restoration both propagated to the open browser
+through HMR. The dark-header logo now retains its original colors on a light
+backing. Automated browser checks cover home and sell at 1905, 1024 and 375px;
+screenshots were inspected for desktop home/sell and mobile home. These checks
+do not constitute an assistive-technology or full accessibility audit.
+
+## 2026-11-20 update
+
+The older checklist below is historical evidence, not a current accessibility
+certification. The UI now follows the supplied reference's font roles, shared
+button/field sizes, neutral palette, spacing and card treatment. Navigation and
+filters have mobile disclosures; form and status text uses higher contrast.
+An independent source review identified and resolved dark-surface focus/text
+contrast and narrow card footer wrapping. Automated token contrast checks run
+with `npm test`. Browser checks were subsequently added as described above;
+assistive technology and a full rendered contrast audit remain unverified.
+
+---
+
 Source: a manual desktop-width audit of `http://localhost:3000` (home, browse,
 a listing page, `/protection`, `/sell`, `/login`). All items below have been
 fixed. Status and file pointers kept for reference / future regressions.

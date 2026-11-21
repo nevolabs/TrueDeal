@@ -25,7 +25,7 @@ export function authRequest(request: Request, signup: boolean) {
       return ok({ user: data.session ? await getSessionUser() : null, confirmationRequired: !data.session });
     }
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw new AppError('Sign-in failed. Check your credentials and confirm your email.', error.status === 429 ? 429 : 401);
+    if (error) throw new AppError('Sign-in failed. Check your email and password.', error.status === 429 ? 429 : 401);
     return ok({ user: await getSessionUser() });
   });
 }

@@ -11,8 +11,8 @@ const STEPS = [
 export default function ProtectionPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
-      <h1 className="text-2xl font-semibold">How TrueDeal works</h1>
-      <p className="mt-2 text-neutral-600">
+      <h1 className="page-title">How TrueDeal works</h1>
+      <p className="mt-2 text-muted-foreground">
         Buying used hardware from a stranger usually means trusting their photos and paying first. On TrueDeal, the
         money waits in escrow, and the item is inspected before it ships.
       </p>
@@ -25,7 +25,7 @@ export default function ProtectionPage() {
             </span>
             <div>
               <h2 className="font-medium">{s[0]}</h2>
-              <p className="text-sm text-neutral-600">{s[1]}</p>
+              <p className="text-sm text-muted-foreground">{s[1]}</p>
             </div>
           </li>
         ))}
@@ -33,25 +33,25 @@ export default function ProtectionPage() {
 
       <section id="window" className="mt-10">
         <h2 className="text-lg font-semibold">The 48-hour inspection window</h2>
-        <p className="mt-2 text-sm text-neutral-600">
+        <p className="mt-2 text-sm text-muted-foreground">
           You have {FEES.inspectionHours} hours from delivery to check the item against its report. If something is
           wrong, raise a claim from your order page and the seller&apos;s payout is frozen while we look into it.
         </p>
-        <p className="mt-2 text-sm text-neutral-600">
+        <p className="mt-2 text-sm text-muted-foreground">
           Record yourself opening the parcel, and check that the seal number on it matches the one on the report.
         </p>
       </section>
 
       <section id="checks" className="mt-10">
         <h2 className="text-lg font-semibold">What we check</h2>
-        <p className="mt-2 text-sm text-neutral-600">
+        <p className="mt-2 text-sm text-muted-foreground">
           The look-and-feel check in the first column is part of every order. If you choose the full bench test, we
           add the checks for that kind of item.
         </p>
         <div className="mt-4 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           <div>
             <h3 className="mb-2 font-medium">Look-and-feel, every item</h3>
-            <ul className="space-y-1 text-sm text-neutral-700">
+            <ul className="space-y-1 text-sm text-secondary-foreground">
               {checklistFor('', 'basic').map((c) => (
                 <li key={c} className="flex items-start gap-2">
                   <CheckIcon size={15} className="mt-0.5 shrink-0 text-emerald-600" />
@@ -63,7 +63,7 @@ export default function ProtectionPage() {
           {(['gpu', 'laptop', 'monitor'] as const).map((k) => (
             <div key={k}>
               <h3 className="mb-2 font-medium">Bench test: {CATEGORIES[k].label.toLowerCase()}</h3>
-              <ul className="space-y-1 text-sm text-neutral-700">
+              <ul className="space-y-1 text-sm text-secondary-foreground">
                 {CHECKS[k].map((c) => (
                   <li key={c} className="flex items-start gap-2">
                     <CheckIcon size={15} className="mt-0.5 shrink-0 text-emerald-600" />
@@ -80,41 +80,41 @@ export default function ProtectionPage() {
         <h2 className="text-lg font-semibold">Fees</h2>
         <table className="mt-4 w-full text-sm">
           <tbody>
-            <tr className="border-b border-neutral-100">
-              <th className="py-2 pr-4 text-left font-medium text-neutral-500">Buyer</th>
+            <tr className="border-b border-line">
+              <th className="py-2 pr-4 text-left font-medium text-muted-foreground">Buyer</th>
               <td className="py-2">
                 Listed price plus insured shipping ({inr(shipFor('mouse'))} to {inr(shipFor('desktop'))} depending on
                 size). The look-and-feel check is included.
               </td>
             </tr>
-            <tr className="border-b border-neutral-100">
-              <th className="py-2 pr-4 text-left font-medium text-neutral-500">Full bench test</th>
+            <tr className="border-b border-line">
+              <th className="py-2 pr-4 text-left font-medium text-muted-foreground">Full bench test</th>
               <td className="py-2">
                 Optional, chosen by the buyer at checkout: {inr(benchFor('mouse'))} for a mouse up to{' '}
                 {inr(benchFor('desktop'))} for a desktop build. Refunded if the item fails.
               </td>
             </tr>
-            <tr className="border-b border-neutral-100">
-              <th className="py-2 pr-4 text-left font-medium text-neutral-500">Seller</th>
+            <tr className="border-b border-line">
+              <th className="py-2 pr-4 text-left font-medium text-muted-foreground">Seller</th>
               <td className="py-2">
                 {FEES.commissionRate * 100}% of the sale price, minimum {inr(FEES.commissionMin)}, deducted from the
                 payout when the deal completes.
               </td>
             </tr>
-            <tr className="border-b border-neutral-100">
-              <th className="py-2 pr-4 text-left font-medium text-neutral-500">On-site visit</th>
+            <tr className="border-b border-line">
+              <th className="py-2 pr-4 text-left font-medium text-muted-foreground">On-site visit</th>
               <td className="py-2">
                 Optional, chosen by the seller when listing. Our agent inspects and collects the item at the
                 seller&apos;s address for {inr(FEES.visitFee)}, deducted from the payout. Still due if the item
                 fails inspection.
               </td>
             </tr>
-            <tr className="border-b border-neutral-100">
-              <th className="py-2 pr-4 text-left font-medium text-neutral-500">Item fails inspection</th>
+            <tr className="border-b border-line">
+              <th className="py-2 pr-4 text-left font-medium text-muted-foreground">Item fails inspection</th>
               <td className="py-2">Buyer refunded in full. Item returned to the seller, who pays return shipping.</td>
             </tr>
             <tr>
-              <th className="py-2 pr-4 text-left font-medium text-neutral-500">Buyer cancels before handover</th>
+              <th className="py-2 pr-4 text-left font-medium text-muted-foreground">Buyer cancels before handover</th>
               <td className="py-2">Full refund, no charge.</td>
             </tr>
           </tbody>
@@ -142,12 +142,12 @@ export default function ProtectionPage() {
               `Every item takes a technician's time to inspect. Below ${inr(FEES.minPrice)}, the inspection would cost more than it protects.`,
             ],
           ].map(([q, a]) => (
-            <details key={q} className="group rounded-lg border border-neutral-200 p-4">
+            <details key={q} className="group rounded-lg border border-line p-4">
               <summary className="flex cursor-pointer list-none items-center justify-between font-medium [&::-webkit-details-marker]:hidden">
                 {q}
-                <ChevronDownIcon size={18} className="shrink-0 text-neutral-400 transition-transform group-open:rotate-180" />
+                <ChevronDownIcon size={18} className="shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
               </summary>
-              <p className="mt-2 text-sm text-neutral-600">{a}</p>
+              <p className="mt-2 text-sm text-muted-foreground">{a}</p>
             </details>
           ))}
         </div>

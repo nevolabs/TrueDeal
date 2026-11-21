@@ -29,7 +29,7 @@ if (mode === 'inspect') {
     const historyExists = await client.query("select to_regclass('supabase_migrations.schema_migrations') is not null as present");
     const history = historyExists.rows[0].present ? (await client.query('select version from supabase_migrations.schema_migrations order by version')).rows : [];
     const counts = await client.query('select (select count(*)::int from auth.users) as auth_users, (select count(*)::int from public.profiles) as profiles, (select count(*)::int from public.user_roles) as operator_grants, (select count(*)::int from public.orders) as orders');
-    const buckets = await client.query("select id, public from storage.buckets where id in ('listing-photos','order-evidence') order by id");
+    const buckets = await client.query("select id, public from storage.buckets where id in ('listing-photos','order-evidence','site-assets') order by id");
     const permissions = await client.query("select has_function_privilege('anon','public.marketplace_command(text,uuid,jsonb)','execute') as anonymous_can_mutate, has_function_privilege('anon','public.app_state()','execute') as anonymous_can_browse, (select bool_and(rowsecurity) from pg_tables where schemaname='public') as public_tables_use_rls");
     console.log(JSON.stringify({ host, tables: tables.rows, migrationHistory: history,
       counts: counts.rows[0], buckets: buckets.rows, permissions: permissions.rows[0] }, null, 2));

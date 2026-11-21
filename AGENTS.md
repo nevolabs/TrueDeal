@@ -18,6 +18,9 @@ records into the live database.
 ## Current implementation
 
 - Supabase Auth supplies email/password authentication and JWT sessions.
+- Email confirmation is disabled at the owner's request (2026-11-20), locally
+  and in hosted Auth. Signup establishes a session immediately; password-based
+  sign-in, verified JWT checks and email-based password recovery remain active.
 - utils/supabase/ contains browser, server, admin and refresh clients; proxy.ts
   refreshes sessions. Protected handlers also verify identity and permissions.
 - lib/session.ts resolves verified identity and current profile/roles.
@@ -27,6 +30,20 @@ records into the live database.
 - lib/payments/ handles Razorpay Checkout/Route, provider reconciliation and
   durable background work through /api/internal/payments/run.
 - Product photos use public Supabase Storage; order evidence is private.
+- Product image references are canonical `listing_media.storage_path` values;
+  the server derives URLs for the configured project. Do not add `/img/`
+  catalogue fallbacks. Import inputs live in `scripts/fixtures/catalog`.
+- Seller details use basic format/consistency checks, with `kyc.basicStatus`
+  separate from identity verification. Completion unlocks listings without
+  operator review; it never grants ID verification or payment activation.
+  Full PAN/account numbers are not retained. New listings require 1–8 owned
+  Storage photos; item galleries use ordered listing_media rows.
+- Navbar branding uses the public `site-assets` bucket and the deployment's
+  `NEXT_PUBLIC_BRAND_LOGO_PATH`. Its source is in `assets/brand`.
+- The homepage follows the owner's reference screenshots: dark home header,
+  three-line hero headline, full-height artwork, integrated dark facts row and
+  provider-reference grid. Provider logos use `assets/providers/manifest.json`
+  and hosted Storage; they must remain labelled as planned integrations.
 - lib/store.ts and lib/seed.ts remain unused historical prototype code.
 - /api/reset and passwordless demo account switching have been removed.
 
@@ -39,6 +56,11 @@ and its profile backfilled; no operator grants or financial records were seeded.
 `npm run db:status` and `npm run db:inspect` verify the current hosted state.
 Migration credentials live only in ignored .env.local. Applied migrations
 are immutable; use a new migration for subsequent schema changes.
+
+On 2026-11-20 the fifth migration (`202611200001_storage_media.sql`) was applied
+for owned Storage image references and branding. The owner-requested sample
+catalogue has four sellers, one buyer and 14 live demo listings; photo imports
+use Storage APIs and do not create orders, verification claims or operator roles.
 
 Payments default to disabled and the user explicitly requested keeping them
 off until Razorpay Route is configured. Do not enable live payments, seed

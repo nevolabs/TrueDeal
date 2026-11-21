@@ -10,6 +10,7 @@ export interface Address {
 
 export interface Kyc {
   status: KycStatus;
+  basicStatus?: 'checked' | 'not_started';
   legalName?: string;
   pan?: string;
   bank?: string;
@@ -66,6 +67,9 @@ export interface Listing {
   sellerId: string;
   category: string;
   img: string;
+  imagePath?: string;
+  imagePaths?: string[];
+  images?: string[];
   title: string;
   brand: string;
   price: number;
