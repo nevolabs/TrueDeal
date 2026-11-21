@@ -11,6 +11,15 @@ are retained; payment onboarding and activation remain separate. Existing pendin
 sellers complete `/sell/verify` again to unlock listing. Listings require 1–8
 owned Storage photos with ordered `listing_media` rows.
 
+Migration `202611210002_seller_editing.sql` adds owner-only product editing and
+revision checks. Saving an eligible listing returns it to pending review; active
+sales and hub inventory cannot be edited. Basic seller-detail updates reset past
+identity approval and are blocked when a provider payout account is activated.
+The `/sell/verify` summary shows masked details and allows updates; it does not
+modify provider bank destinations. One dedicated hosted bench-agent account was
+explicitly provisioned at the owner's request; its credentials remain local and
+ignored, and migrations never seed operator grants.
+
 ## 1. Apply the database migrations
 
 Target project: `fgcgmycoyxrkznskgkpa`. All four migrations were applied on

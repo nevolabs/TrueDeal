@@ -38,6 +38,10 @@ records into the live database.
   operator review; it never grants ID verification or payment activation.
   Full PAN/account numbers are not retained. New listings require 1–8 owned
   Storage photos; item galleries use ordered listing_media rows.
+- Seller dashboard includes seller/bank details updates and owned listing edits.
+  Product edits require a current revision and return to review. Reserved/sold,
+  hub-inspected and active-order listings cannot be edited. Activated payout
+  accounts require provider-managed changes; basic updates do not move money.
 - Navbar branding uses the public `site-assets` bucket and the deployment's
   `NEXT_PUBLIC_BRAND_LOGO_PATH`. Its source is in `assets/brand`.
 - The homepage follows the owner's reference screenshots: dark home header,

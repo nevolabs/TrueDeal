@@ -11,6 +11,9 @@ export interface Address {
 export interface Kyc {
   status: KycStatus;
   basicStatus?: 'checked' | 'not_started';
+  panLast4?: string;
+  bankLast4?: string;
+  ifsc?: string;
   legalName?: string;
   pan?: string;
   bank?: string;
@@ -64,6 +67,7 @@ export interface InspectionReport {
 
 export interface Listing {
   id: string;
+  revision?: number;
   sellerId: string;
   category: string;
   img: string;

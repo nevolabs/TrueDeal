@@ -87,7 +87,7 @@ function Dashboard() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="page-title">Selling</h1>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -95,11 +95,14 @@ function Dashboard() {
             {k === 'verified' && <span className="ml-2 rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-800">✓ ID verified</span>}
           </p>
         </div>
+        <div className="flex flex-wrap justify-end gap-3">
+          <Link href="/sell/verify" className="btn btn-secondary">Seller &amp; bank details</Link>
         {ready && (
           <Link href="/sell/new" className="btn">
             List an item
           </Link>
         )}
+        </div>
       </div>
 
       {!ready && (
@@ -168,9 +171,14 @@ function Dashboard() {
                     </td>
                     <td className="px-4 py-2"><span className={`rounded-full px-2 py-0.5 text-xs ${st[1]}`}>{st[0]}</span></td>
                     <td className="px-4 py-2 text-right">
+                      <div className="flex justify-end gap-2">
+                      {l.mode === 'order' && ['pending', 'live', 'rejected', 'withdrawn'].includes(l.status) && (
+                        <Link href={`/sell/edit/${encodeURIComponent(l.id)}`} className="btn btn-sm btn-secondary">Edit</Link>
+                      )}
                       {['live', 'pending'].includes(l.status) && (
                         <button onClick={() => withdraw(l.id)} className="btn btn-sm btn-secondary">Withdraw</button>
                       )}
+                      </div>
                     </td>
                   </tr>
                 );

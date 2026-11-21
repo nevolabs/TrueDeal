@@ -6,6 +6,22 @@ to replay `git log`.
 
 ---
 
+## 2026-11-21 — Edit seller details and product listings
+
+- Added Selling → Seller & bank details with masked saved values and a validated
+  update form. Full PAN/account values must be re-entered and are not retained.
+  Updates reset earlier identity approval, and activated provider accounts block
+  this form from changing details or payout destinations.
+- Added Edit actions and a shared create/edit product form, including retained
+  Storage photos, new uploads and removal. Owned pending/live/rejected/withdrawn
+  order-mode listings can be edited; saving resubmits them for review. Reserved,
+  sold, hub-inspected and active-order listings are protected in the database.
+- Added atomic revision checks so stale edits cannot overwrite newer changes,
+  approvals or sales. The immutable order snapshots and payment controls remain.
+- Applied migration 202611210002_seller_editing.sql. Verification includes 34 SQL/
+  application tests, browser bank/edit flows, build, TypeScript and ESLint. Hosted
+  checking used temporary demo listings/photos and restored seller details.
+
 ## 2026-11-21 — Seller setup and multiple listing photos
 
 - Payout calculator stores editable text so clearing it does not force a zero.

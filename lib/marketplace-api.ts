@@ -65,7 +65,7 @@ export function marketplaceWrite(request: Request, action: string, id?: string) 
     const body = request.headers.get('content-type')?.includes('application/json') ? await jsonBody(request) : {};
     let entity = id || null;
     let payload: Record<string, unknown> = body;
-    if (action === 'create_listing') {
+    if (action === 'create_listing' || action === 'update_listing') {
       payload = { title: text(body.title,'title',90,3), brand: text(body.brand,'brand'),
         category: oneOf(body.category,Object.keys(CATEGORIES),'category'), condition: oneOf(body.condition,Object.keys(CONDITIONS),'condition'),
         description: text(body.description,'description',10000,5), city: text(body.city,'city'), serial: text(body.serial,'serial'),
@@ -85,6 +85,10 @@ export function marketplaceWrite(request: Request, action: string, id?: string) 
         payload.imagePaths = body.imagePaths;
       } else if (!body.img) throw new AppError('Upload at least one product photo.');
       if (!Number.isFinite(payload.price) || !Number.isInteger(payload.ageMonths) || Number(payload.ageMonths)<0 || Number(payload.ageMonths)>240) throw new AppError('Invalid price or age.');
+      if (action === 'update_listing') {
+        if (!Number.isSafeInteger(body.revision) || Number(body.revision) < 1) throw new AppError('Reload the listing before saving your changes.');
+        payload.revision = body.revision;
+      }
     } else if (action === 'reserve') {
       if (!paymentsEnabled()) throw new AppError('Payments are not enabled yet. Checkout will be available after payment onboarding.',503);
       entity = text(body.listingId,'listing');
@@ -113,6 +117,7 @@ export function marketplaceWrite(request: Request, action: string, id?: string) 
     else if (action === 'dispute') payload={reason:text(body.reason,'reason',200),detail:text(body.detail,'details',10000,5)};
     const result = await command(action,entity,payload);
     if (action==='create_listing') return ok({listing:(await readState()).listings.find(l => l.id===result)},201);
+    if (action==='update_listing') return ok({listing:(await readState()).listings.find(l => l.id===result)});
     if (action==='reserve') return ok({order:(await readState()).orders.find(o => o.id===result)},201);
     return ok({done:true});
   });

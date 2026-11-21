@@ -19,13 +19,30 @@ function Form() {
   const [accountHolder, setAccountHolder] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   if (!user) return null;
-  if (sellerReady(user.kyc)) return (
+  const ready = sellerReady(user.kyc);
+  if (ready && !editing) return (
     <div className="mx-auto max-w-lg px-4 py-12">
-      <h1 className="page-title">Ready to list</h1>
-      <p className="my-3 text-sm">Your seller details are complete. You can now submit an item for listing review.</p>
-      <Link className="btn" href="/sell/new">List an item</Link>
+      <h1 className="page-title">Seller &amp; bank details</h1>
+      <p className="my-3 text-sm">Your seller details are complete. Basic checks do not verify identity or account ownership.</p>
+      <dl className="my-6 space-y-3 rounded-lg border border-line bg-surface p-5 text-sm">
+        <div><dt className="text-muted-foreground">Legal name</dt><dd>{user.kyc.legalName || 'Not provided'}</dd></div>
+        <div><dt className="text-muted-foreground">PAN</dt><dd>{user.kyc.panLast4 ? `••••••${user.kyc.panLast4}` : 'Not provided'}</dd></div>
+        <div><dt className="text-muted-foreground">Bank account</dt><dd>{user.kyc.bankLast4 ? `Ending in ${user.kyc.bankLast4}` : 'Not provided'}</dd></div>
+        <div><dt className="text-muted-foreground">IFSC</dt><dd>{user.kyc.ifsc || 'Not provided'}</dd></div>
+      </dl>
+      <p className="mb-5 text-sm text-muted-foreground">Updating these basic details does not change an actual payout destination. Payment provider onboarding is separate.</p>
+      <div className="flex flex-wrap gap-3">
+        <button type="button" className="btn" onClick={() => {
+          setLegalName(user.kyc.legalName || '');
+          setIfsc(user.kyc.ifsc || '');
+          setAccountHolder(user.kyc.legalName || '');
+          setEditing(true);
+        }}>Update details</button>
+        <Link className="btn btn-secondary" href="/selling">Back to selling</Link>
+      </div>
     </div>
   );
 
@@ -39,16 +56,17 @@ function Form() {
         setBusy(true);
         await api.post('/api/kyc', details);
         await refresh();
-        router.push('/sell/new');
+        router.push(ready ? '/selling' : '/sell/new');
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Could not save your details. Please retry.');
       } finally {
         setBusy(false);
       }
     }}>
-      <h1 className="page-title">Your seller details</h1>
+      <h1 className="page-title">{ready ? 'Update seller details' : 'Your seller details'}</h1>
       <p className="mb-6 mt-3 text-sm text-muted-foreground">Complete these basic checks to start listing. They check the format and consistency of your details; they do not verify your identity or bank account.</p>
       <p className="mb-6 text-xs text-muted-foreground">Your full PAN and account number are not stored. We retain only their last four characters and your IFSC. Payment provider onboarding is a separate requirement before payouts.</p>
+      {ready && <p className="mb-6 text-sm text-muted-foreground">Re-enter your full PAN and account number to validate an update. Saving resets any previous identity verification; basic listing eligibility remains. This form cannot change an actual payout destination. If payouts are already enabled, details must be updated through the payment provider.</p>}
       <fieldset disabled={busy} className="flex min-w-0 flex-col gap-4">
         <legend className="sr-only">Required seller details</legend>
         <p className="text-xs text-muted-foreground">All fields are required. Use your own PAN and bank account.</p>
@@ -71,7 +89,14 @@ function Form() {
           <input required minLength={2} maxLength={100} autoComplete="off" className="mt-1 w-full" value={accountHolder} onChange={(event) => setAccountHolder(event.target.value)} />
         </label>
         {error && <p role="alert" className="text-sm text-danger">{error}</p>}
-        <button disabled={busy} className="btn">{busy ? 'Saving details…' : 'Save and continue'}</button>
+        <button disabled={busy} className="btn">{busy ? 'Saving details…' : ready ? 'Save updated details' : 'Save and continue'}</button>
+        {ready && <button type="button" className="btn btn-secondary" onClick={() => {
+          setPan('');
+          setAccountNumber('');
+          setConfirmAccountNumber('');
+          setError('');
+          setEditing(false);
+        }}>Cancel</button>}
       </fieldset>
     </form>
   );

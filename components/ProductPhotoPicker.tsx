@@ -5,7 +5,8 @@ import { useEffect, useId, useRef, useState } from 'react';
 
 export interface ProductPhoto {
   id: string;
-  file: File;
+  file?: File;
+  name?: string;
   preview: string;
   path?: string;
 }
@@ -68,11 +69,13 @@ export default function ProductPhotoPicker({ photos, onChange, disabled = false 
       <p role="status" className="mt-2 text-xs text-muted-foreground">{photos.length} of 8 photos selected</p>
       {photos.length > 0 && <ol className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
         {photos.map((photo, index) => <li key={photo.id} className="min-w-0 rounded-lg border border-line bg-surface p-2">
-          <Image src={photo.preview} alt={`Selected photo ${index + 1}: ${photo.file.name}`} width={240} height={180} unoptimized className="aspect-[4/3] w-full rounded object-cover" />
-          <p className="mt-1 truncate text-xs" title={photo.file.name}>{index === 0 ? 'Cover · ' : ''}{photo.file.name}</p>
-          <button type="button" disabled={disabled} aria-label={`Remove photo ${index + 1}: ${photo.file.name}`} className="btn btn-sm btn-secondary mt-2 w-full" onClick={() => {
-            URL.revokeObjectURL(photo.preview);
-            previewUrls.current.delete(photo.preview);
+          {photo.preview ? <Image src={photo.preview} alt={`Selected photo ${index + 1}: ${photo.file?.name || photo.name || 'Product photo'}`} width={240} height={180} unoptimized className="aspect-[4/3] w-full rounded object-cover" /> : <p className="flex aspect-[4/3] items-center justify-center rounded bg-tint text-xs">Preview unavailable</p>}
+          <p className="mt-1 truncate text-xs" title={photo.file?.name || photo.name}>{index === 0 ? 'Cover · ' : ''}{photo.file?.name || photo.name || 'Product photo'}</p>
+          <button type="button" disabled={disabled} aria-label={`Remove photo ${index + 1}: ${photo.file?.name || photo.name || 'Product photo'}`} className="btn btn-sm btn-secondary mt-2 w-full" onClick={() => {
+            if (previewUrls.current.has(photo.preview)) {
+              URL.revokeObjectURL(photo.preview);
+              previewUrls.current.delete(photo.preview);
+            }
             onChange(photos.filter((item) => item.id !== photo.id));
             setError('');
           }}>Remove</button>

@@ -34,6 +34,7 @@ async function database(bundle = false, withMedia = true) {
   if (withMedia) await db.exec(await readFile('supabase/migrations/202611200001_storage_media.sql','utf8'));
   if (withMedia) await db.exec(await readFile('supabase/migrations/202611200002_site_asset_formats.sql','utf8'));
   if (withMedia) await db.exec(await readFile('supabase/migrations/202611210001_seller_details_and_gallery.sql','utf8'));
+  if (withMedia) await db.exec(await readFile('supabase/migrations/202611210002_seller_editing.sql','utf8'));
   for(const [id,name] of [[buyer,'Buyer'],[seller,'Seller'],[ops,'Operator'],[stranger,'Other']]) {
     await db.query(`insert into auth.users(id,email,raw_user_meta_data) values($1,$2,$3)`,[id,name+'@test.invalid',JSON.stringify({name,city:'Bengaluru'})]);
   }
@@ -354,6 +355,55 @@ test('basic checks unblock pending sellers without granting verified identity or
     await assert.rejects(db.query("select public.marketplace_command_legacy('create_listing',null,'{}')"));
     await db.exec('reset role');
     assert.equal((await db.query('select * from public.seller_accounts')).rows.length,0);
+  }finally{await db.close();}
+});
+
+test('listing edits enforce ownership, revisions, photo ownership and renewed review atomically',async()=>{
+  const db=await database();
+  try {
+    const id=await listed(db);
+    await asUser(db,seller);
+    const state=(await db.query<{state:{listings:{id:string;revision:number}[]}}>('select public.app_state() as state')).rows[0].state;
+    const revision=state.listings.find(l=>l.id===id)!.revision;
+    const body={title:'Updated graphics card',brand:'Updated',category:'gpu',condition:'excellent',price:15000,ageMonths:0,handover:'onsite',serial:'UPDATED',description:'Updated product details',city:'Chennai',imagePaths:[`${seller}/aaa.jpg`],revision};
+    await asUser(db,stranger);await assert.rejects(command(db,'update_listing',id,body));
+    await asUser(db,ops);await assert.rejects(command(db,'update_listing',id,body));
+    await asUser(db,seller);
+    await assert.rejects(command(db,'update_listing',id,{...body,imagePaths:[`${stranger}/aaa.jpg`]}));
+    await assert.rejects(command(db,'update_listing',id,{...body,price:1}));
+    await command(db,'update_listing',id,body);
+    await assert.rejects(command(db,'update_listing',id,body));
+    await db.exec('reset role');
+    const row=(await db.query<{status:string;revision:number;price_paise:number;serial:string;attributes:{title:string}}> ('select * from public.listings where id=$1',[id])).rows[0];
+    assert.equal(row.status,'pending');assert.equal(row.price_paise,1500000);assert.equal(row.serial,'UPDATED');assert.equal(row.attributes.title,body.title);assert.equal(row.revision,revision+1);
+    assert.equal((await db.query('select * from public.listing_media where listing_id=$1',[id])).rows.length,1);
+    for(const status of ['reserved','sold']) {
+      await db.query('update public.listings set status=$1 where id=$2',[status,id]);
+      const rev=(await db.query<{revision:number}>('select revision from public.listings where id=$1',[id])).rows[0].revision;
+      await asUser(db,seller);await assert.rejects(command(db,'update_listing',id,{...body,revision:rev}));await db.exec('reset role');
+    }
+    await db.query("update public.listings set status='live',mode='hub' where id=$1",[id]);
+    const rev=(await db.query<{revision:number}>('select revision from public.listings where id=$1',[id])).rows[0].revision;
+    await asUser(db,seller);await assert.rejects(command(db,'update_listing',id,{...body,revision:rev}));
+    await assert.rejects(db.query("select public.marketplace_command_v2('update_listing',null,'{}')"));
+  }finally{await db.close();}
+});
+
+test('seller detail edits reset earlier identity approval and never change an activated payout account',async()=>{
+  const db=await database();
+  try {
+    await listed(db);
+    await asUser(db,seller);
+    await command(db,'submit_kyc',null,{...sellerDetails,accountNumber:'012345679012',confirmAccountNumber:'012345679012'});
+    await db.exec('reset role');
+    const row=(await db.query<{status:string;bank_last4:string;reviewed_by:string|null}>('select * from public.seller_verifications where user_id=$1',[seller])).rows[0];
+    assert.equal(row.status,'pending');assert.equal(row.bank_last4,'9012');assert.equal(row.reviewed_by,null);
+    await db.query("insert into public.seller_accounts(user_id,environment,provider_account_id,payouts_enabled) values($1,'test','acc_unchanged',true)",[seller]);
+    await asUser(db,seller);await assert.rejects(command(db,'submit_kyc',null,sellerDetails));
+    await db.exec('reset role');
+    const account=(await db.query<{provider_account_id:string}>('select * from public.seller_accounts where user_id=$1',[seller])).rows[0];
+    assert.equal(account.provider_account_id,'acc_unchanged');
+    assert.equal((await db.query<{bank_last4:string}>('select bank_last4 from public.seller_verifications where user_id=$1',[seller])).rows[0].bank_last4,'9012');
   }finally{await db.close();}
 });
 
